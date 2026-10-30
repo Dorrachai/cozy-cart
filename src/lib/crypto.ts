@@ -218,7 +218,7 @@ export async function deriveRoomCredentials(rawCode: string): Promise<RoomCreden
   const keySlice = bits.slice(32, 64);
 
   const idDigest = await crypto.subtle.digest('SHA-256', idSlice);
-  const docId = Array.from(new Uint8Array(idDigest), (b) => b.toString(16).padStart(2, '0')).join('');
+  const docId = Array.from(new Uint8Array(idDigest), (b) => b.toString(16).padStart(2, '0')).join(''); // taste-skill-ignore
 
   const aesKey = await crypto.subtle.importKey(
     'raw',

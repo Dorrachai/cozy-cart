@@ -38,7 +38,7 @@ describe('crypto & zero-knowledge Friend Codes', () => {
     expect(credsA.docId).toMatch(/^[a-f0-9]{64}$/);
     expect(credsA.docId).toBe(credsB.docId);
 
-    const secret = { title: 'November Groceries 🍂', items: ['Oat milk', 'Sour gummies'] };
+    const secret = { title: 'November Groceries', items: ['Oat milk', 'Sour gummies'] };
     const { ct, iv } = await encryptPayload(secret, credsA.aesKey);
 
     // Ciphertext must never leak plaintext terms
@@ -120,7 +120,7 @@ describe('crypto & zero-knowledge Friend Codes', () => {
       id: 'list123',
       listCode: 'https://evil.example/malicious-qr',
       title: 'Groceries\u0000\u0007',
-      emoji: '🛒',
+      emoji: '',
       createdAt: now - 1000,
       updatedAt: 99_999_999_999_999,
       items: {
@@ -153,7 +153,7 @@ describe('crypto & zero-knowledge Friend Codes', () => {
           id: 'good',
           listCode: 'L-lemon-toast-3M8Q2W9',
           title: 'October',
-          emoji: '🎃',
+          emoji: '',
           createdAt: now,
           updatedAt: now,
         },
@@ -161,7 +161,7 @@ describe('crypto & zero-knowledge Friend Codes', () => {
           id: 'bad',
           listCode: 'https://evil.example/steal',
           title: 'Click Me',
-          emoji: '💀',
+          emoji: '',
           createdAt: now,
           updatedAt: now,
         },

@@ -11,9 +11,7 @@ interface ModalDialogProps {
 }
 
 /**
- * Accessible native `<dialog>` modal following modern-web-guidance `light-dismiss-a-dialog`:
- * - Uses declarative `closedby="any"` + `showModal()`
- * - Includes mandatory bounding-rect click fallback for browsers without `closedBy` (e.g. Safari)
+ * Accessible native `<dialog>` modal with declarative `closedby="any"` and Safari light-dismiss fallback.
  */
 export function ModalDialog({
   open,
@@ -46,7 +44,6 @@ export function ModalDialog({
     };
     dialog.addEventListener('close', handleClose);
 
-    // Mandatory fallback for browsers without native `closedBy` support (Safari)
     let handleBackdropClick: ((event: MouseEvent) => void) | null = null;
     if (!('closedBy' in HTMLDialogElement.prototype)) {
       handleBackdropClick = (event: MouseEvent) => {
@@ -74,25 +71,27 @@ export function ModalDialog({
   return (
     <dialog
       ref={dialogRef}
+      autoFocus
+      tabIndex={-1}
       aria-labelledby={titleId}
       {...({ closedby: 'any' } as Record<string, string>)}
-      className={`m-auto w-[calc(100%-1.5rem)] ${maxWidthClass} rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-surface)] p-0 text-[var(--text-main)] shadow-2xl outline-none`}
+      className={`m-auto w-[calc(100%-1.5rem)] ${maxWidthClass} rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-raised)] p-0 text-[var(--text-main)] outline-none`}
     >
       <div className="flex max-h-[88dvh] flex-col">
         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-soft)] px-5 py-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="truncate text-lg font-bold tracking-tight">
+            <h2 id={titleId} className="truncate text-[17px] font-semibold tracking-tight">
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-[var(--text-muted)]">{subtitle}</p>
+              <p className="mt-1 text-[14px] leading-snug text-[var(--text-muted)]">{subtitle}</p>
             )}
           </div>
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
             aria-label="Close dialog"
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-bg)]"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)]"
           >
             <X className="h-4 w-4" />
           </button>

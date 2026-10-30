@@ -49,11 +49,9 @@ function getDefaultStarterTitle(): { title: string; emoji: string } {
     month: 'long',
     year: 'numeric',
   }).format(now);
-  const month = now.getMonth();
-  const seasonalEmojis = ['❄️', '❄️', '🌱', '🌷', '🌸', '🍓', '☀️', '🍉', '🍂', '🎃', '🍂', '🎄'];
   return {
     title: monthYear,
-    emoji: seasonalEmojis[month] ?? '🛒',
+    emoji: '',
   };
 }
 
@@ -507,7 +505,7 @@ export function useHouseholdStore() {
             listsByCode: { ...curr.listsByCode, ...fetchedLists },
             activeListCode: firstListCode,
           }));
-          showToast('Joined shared household! ✨');
+          showToast('Joined shared household');
           return { ok: true, message: 'Joined household!' };
         } catch {
           return { ok: false, message: 'Could not decrypt household. Double-check the code!' };
@@ -542,7 +540,7 @@ export function useHouseholdStore() {
           },
           activeListCode: creds.normalized,
         }));
-        showToast(`Joined "${remoteList.title}"! 🛒`);
+        showToast(`Joined "${remoteList.title}"`);
         return { ok: true, message: `Joined ${remoteList.title}!` };
       } catch {
         return { ok: false, message: 'Could not decrypt list. Double-check the friend code!' };
@@ -723,7 +721,7 @@ export function useHouseholdStore() {
         };
       });
 
-      showToast(`Imported & auto-sorted ${parsed.length} items! ✨`);
+      showToast(`Imported and sorted ${parsed.length} items`);
       return parsed.length;
     },
     [mutateActiveList, showToast]
@@ -824,8 +822,8 @@ export function useHouseholdStore() {
 
     showToast(
       changedCount > 0
-        ? `Auto-sorted ${changedCount} ${changedCount === 1 ? 'item' : 'items'} into aisles! ✨`
-        : 'All items are sorted into their aisles! ✨'
+        ? `Sorted ${changedCount} ${changedCount === 1 ? 'item' : 'items'} into aisles`
+        : 'All items are sorted into aisles'
     );
   }, [mutateActiveList, showToast]);
 
@@ -862,7 +860,7 @@ export function useHouseholdStore() {
     }) => {
       const now = Date.now();
       const cleanTitle = sanitizeListTitle(options.title);
-      const cleanEmoji = options.emoji.trim() || '🛒';
+      const cleanEmoji = options.emoji.trim();
       const newListCode = generateFriendCode('list');
       const newId = makeShortId();
 
@@ -936,7 +934,7 @@ export function useHouseholdStore() {
         };
       });
 
-      showToast(`Created "${cleanTitle}"! 🎉`);
+      showToast(`Created "${cleanTitle}"`);
     },
     [activeList.items, scheduleHouseholdPush, scheduleListPush, showToast]
   );
@@ -1058,7 +1056,7 @@ export function useHouseholdStore() {
   const startFreshHousehold = useCallback(() => {
     const fresh = createInitialSession();
     setSession(fresh);
-    showToast('Started a brand-new private household! 🌱');
+    showToast('Started a new private household');
   }, [showToast]);
 
   return {

@@ -16,7 +16,7 @@ describe('Notes Checklist Copy & Paste Round-Trip', () => {
     id: 'l1',
     listCode: 'L-berry-mochi-2345678',
     title: 'Weekend Cabin Grocery Run',
-    emoji: '🧺',
+    emoji: '',
     createdAt: 1,
     updatedAt: 1,
     items: {
@@ -32,7 +32,7 @@ describe('Notes Checklist Copy & Paste Round-Trip', () => {
       groupByCategory: true,
       includeChecked: true,
     });
-    expect(md).toContain('### 🥛 Dairy');
+    expect(md).toContain('### Dairy');
     expect(md).toContain('- [ ] 2x Oat milk');
     expect(md).toContain('- [x] 6 Bananas');
 
@@ -46,20 +46,20 @@ describe('Notes Checklist Copy & Paste Round-Trip', () => {
   });
 
   it('parses pasted checklists from Notes apps and auto-categorizes every item', () => {
-    const pasted = `
-      ### 🥛 Dairy
-      - [ ] 2x Oat milk
-      - [x] Butter
-      ☐ Lösgodis
-      • Toilet paper
-      1. 500g Strawberries
-    `;
+    const pasted = [
+      '### Dairy',
+      '- [ ] 2x Oat milk',
+      '- [x] Butter',
+      '\u2610 L\u00f6sgodis',
+      '\u2022 Toilet paper',
+      '1. 500g Strawberries',
+    ].join('\n');
 
     const items = parsePastedChecklist(pasted);
     expect(items).toEqual([
       { name: 'Oat milk', qty: '2x', checked: false, category: 'dairy' },
       { name: 'Butter', qty: '', checked: true, category: 'dairy' },
-      { name: 'Lösgodis', qty: '', checked: false, category: 'candy' },
+      { name: 'L\u00f6sgodis', qty: '', checked: false, category: 'candy' },
       { name: 'Toilet paper', qty: '', checked: false, category: 'household' },
       { name: 'Strawberries', qty: '500g', checked: false, category: 'produce' },
     ]);

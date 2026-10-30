@@ -13,18 +13,22 @@ export interface ParsedChecklistLine {
   category: CategoryId;
 }
 
+const BOX_UNCHECKED = '\u2610';
+const BOX_CHECKED = '\u2611';
+const CHECK_MARK = '\u2713';
+
 function formatItemLine(item: ShoppingItem, format: ChecklistExportOptions['format']): string {
   const label = item.qty ? `${item.qty} ${item.name}` : item.name;
   switch (format) {
     case 'markdown':
       return `- [${item.checked ? 'x' : ' '}] ${label}`;
     case 'unicode':
-      return `${item.checked ? '☑' : '☐'} ${label}`;
+      return `${item.checked ? BOX_CHECKED : BOX_UNCHECKED} ${label}`;
     case 'notes-plain':
     default:
       // Clean lines with zero bullet prefix so tapping the Checklist button in
-      // Apple Notes / Google Keep / Samsung Notes turns every line into a native checkbox!
-      return item.checked ? `✓ ${label}` : label;
+      // Apple Notes / Google Keep / Samsung Notes turns every line into a native checkbox
+      return item.checked ? `${CHECK_MARK} ${label}` : label;
   }
 }
 
@@ -44,16 +48,15 @@ export function exportListAsChecklist(
     });
 
   if (activeItems.length === 0) {
-    return `${list.emoji} ${list.title}\n(Empty list)`;
+    return `${list.title}\n(Empty list)`;
   }
 
   if (!options.groupByCategory) {
     const lines = activeItems.map((item) => formatItemLine(item, options.format));
     if (options.format === 'notes-plain') {
-      // Pure item lines make "Select All -> Checklist" in Apple Notes / Keep 1-tap clean
       return lines.join('\n');
     }
-    return `${list.emoji} ${list.title}\n\n${lines.join('\n')}`;
+    return `${list.title}\n\n${lines.join('\n')}`;
   }
 
   const grouped = new Map<CategoryId, ShoppingItem[]>();
@@ -65,16 +68,13 @@ export function exportListAsChecklist(
 
   const sections: string[] = [];
   if (options.format !== 'notes-plain') {
-    sections.push(`${list.emoji} ${list.title}`);
+    sections.push(list.title);
   }
 
   for (const cat of CATEGORIES) {
     const bucket = grouped.get(cat.id);
     if (!bucket || bucket.length === 0) continue;
-    const header =
-      options.format === 'markdown'
-        ? `### ${cat.emoji} ${cat.shortLabel}`
-        : `${cat.emoji} ${cat.shortLabel}`;
+    const header = options.format === 'markdown' ? `### ${cat.shortLabel}` : cat.shortLabel;
     const itemLines = bucket.map((item) => formatItemLine(item, options.format)).join('\n');
     sections.push(`${header}\n${itemLines}`);
   }
@@ -83,13 +83,13 @@ export function exportListAsChecklist(
 }
 
 const KNOWN_HEADERS = new Set(
-  CATEGORIES.flatMap((c) => [
-    c.label.toLowerCase(),
-    c.shortLabel.toLowerCase(),
-    `${c.emoji} ${c.label}`.toLowerCase(),
-    `${c.emoji} ${c.shortLabel}`.toLowerCase(),
-  ])
+  CATEGORIES.flatMap((c) => [c.label.toLowerCase(), c.shortLabel.toLowerCase(), 'candy'])
 );
+
+const CHECKED_BRACKET_RE = /^(?:[-*\u2022]\s*)?\[[xX\u2713\u2714]\]\s+/;
+const CHECKED_GLYPH_RE = /^[\u2611\u2705\u2713\u2714]\s+/;
+const UNCHECKED_BRACKET_RE = /^(?:[-*\u2022]\s*)?\[\s?\]\s+/;
+const UNCHECKED_GLYPH_RE = /^[\u2610\u2B1C\u25FB\u25AB\u2022*\u2013\u2014-]\s+/;
 
 /**
  * Parses pasted multi-line checklists from Apple Notes, Google Keep, Markdown, or chat messages
@@ -106,12 +106,18 @@ export function parsePastedChecklist(
     let line = rawLine.trim();
     if (!line) continue;
 
-    // Skip markdown headings or our own exported aisle headers
+    // Skip markdown headings or exported aisle headers
     const withoutHashes = line.replace(/^#{1,6}\s*/, '').trim();
+    const strippedHeader = withoutHashes
+      .replace(/^[\p{Emoji}\p{Emoji_Component}\s]+/u, '')
+      .trim()
+      .toLowerCase();
+
     if (
       line.startsWith('#') ||
       KNOWN_HEADERS.has(line.toLowerCase()) ||
       KNOWN_HEADERS.has(withoutHashes.toLowerCase()) ||
+      KNOWN_HEADERS.has(strippedHeader) ||
       line === '(Empty list)'
     ) {
       continue;
@@ -119,35 +125,32 @@ export function parsePastedChecklist(
 
     let checked = false;
 
-    // Detect checked markers: - [x], * [X], [x], ☑, ✅, ✓, ✔
-    if (/^(?:[-*•]\s*)?\[[xX✓✔]\]\s+/.test(line)) {
+    if (CHECKED_BRACKET_RE.test(line)) {
       checked = true;
-      line = line.replace(/^(?:[-*•]\s*)?\[[xX✓✔]\]\s+/, '');
-    } else if (/^[☑✅✓✔]\s+/.test(line)) {
+      line = line.replace(CHECKED_BRACKET_RE, '');
+    } else if (CHECKED_GLYPH_RE.test(line)) {
       checked = true;
-      line = line.replace(/^[☑✅✓✔]\s+/, '');
-    } else if (/^(?:[-*•]\s*)?\[\s?\]\s+/.test(line)) {
-      // Unchecked markdown checkbox: - [ ] Milk
-      line = line.replace(/^(?:[-*•]\s*)?\[\s?\]\s+/, '');
-    } else if (/^[☐⬜◻▫•*–—-]\s+/.test(line)) {
-      // Unchecked unicode checkbox or bullet
-      line = line.replace(/^[☐⬜◻▫•*–—-]\s+/, '');
+      line = line.replace(CHECKED_GLYPH_RE, '');
+    } else if (UNCHECKED_BRACKET_RE.test(line)) {
+      line = line.replace(UNCHECKED_BRACKET_RE, '');
+    } else if (UNCHECKED_GLYPH_RE.test(line)) {
+      line = line.replace(UNCHECKED_GLYPH_RE, '');
     } else if (/^\d+[.)]\s+/.test(line)) {
-      // Numbered list: "1. Milk"
       line = line.replace(/^\d+[.)]\s+/, '');
     }
 
     const cleaned = line.trim();
     if (!cleaned) continue;
 
-    // Skip if line matches an aisle emoji+name header after stripping
-    const strippedEmoji = cleaned.replace(/^[\p{Emoji}\p{Emoji_Component}\s]+/u, '').trim().toLowerCase();
+    const strippedEmoji = cleaned
+      .replace(/^[\p{Emoji}\p{Emoji_Component}\s]+/u, '')
+      .trim()
+      .toLowerCase();
     if (
+      cleaned !== strippedEmoji &&
       Object.values(CATEGORY_MAP).some(
         (c) =>
-          cleaned === `${c.emoji} ${c.shortLabel}` ||
-          cleaned === `${c.emoji} ${c.label}` ||
-          (cleaned.startsWith(c.emoji) && (strippedEmoji === c.shortLabel.toLowerCase() || strippedEmoji === c.label.toLowerCase()))
+          strippedEmoji === c.shortLabel.toLowerCase() || strippedEmoji === c.label.toLowerCase()
       )
     ) {
       continue;

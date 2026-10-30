@@ -24,11 +24,6 @@ function syncMetaElement(stored: StoredScheme): void {
   }
 }
 
-/**
- * Two-state comfort theme toggle following modern-web-guidance `dark-mode-toggle`:
- * - Flips the currently rendered scheme.
- * - Removes `localStorage` override when returning to system preference so OS auto-switching isn't pinned.
- */
 export function ThemeToggle() {
   const [stored, setStored] = useState<StoredScheme>(() => readStoredScheme());
   const [systemScheme, setSystemScheme] = useState<'light' | 'dark'>(() => getSystemScheme());
@@ -61,7 +56,6 @@ export function ThemeToggle() {
     const target: 'light' | 'dark' = currentRendered === 'dark' ? 'light' : 'dark';
 
     if (target === currentSys) {
-      // Returning to system preference: remove stored override so future OS switches work naturally
       try {
         localStorage.removeItem('color-scheme');
       } catch {
@@ -88,7 +82,7 @@ export function ThemeToggle() {
       onClick={handleToggle}
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:bg-[var(--bg-subtle)] hover:text-[var(--text-main)]"
+      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>

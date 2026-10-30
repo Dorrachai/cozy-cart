@@ -2,18 +2,18 @@ import Fuse from 'fuse.js';
 import type { CategoryId, CategoryMeta } from '../types/shopping';
 
 export const CATEGORIES: readonly CategoryMeta[] = [
-  { id: 'produce', label: 'Produce & Fruit', shortLabel: 'Produce', emoji: '🍓', order: 1, tone: 'cat-produce' },
-  { id: 'bakery', label: 'Bakery & Bread', shortLabel: 'Bakery', emoji: '🥖', order: 2, tone: 'cat-bakery' },
-  { id: 'dairy', label: 'Dairy & Eggs', shortLabel: 'Dairy', emoji: '🥛', order: 3, tone: 'cat-dairy' },
-  { id: 'meat', label: 'Meat, Fish & Tofu', shortLabel: 'Meat & Fish', emoji: '🥩', order: 4, tone: 'cat-meat' },
-  { id: 'pantry', label: 'Pantry & Cooking', shortLabel: 'Pantry', emoji: '🥫', order: 5, tone: 'cat-pantry' },
-  { id: 'frozen', label: 'Frozen Foods', shortLabel: 'Frozen', emoji: '🧊', order: 6, tone: 'cat-frozen' },
-  { id: 'candy', label: 'Candy & Snacks', shortLabel: 'Candy', emoji: '🍬', order: 7, tone: 'cat-candy' },
-  { id: 'drinks', label: 'Drinks & Coffee', shortLabel: 'Drinks', emoji: '🧃', order: 8, tone: 'cat-drinks' },
-  { id: 'household', label: 'Household & Paper', shortLabel: 'Household', emoji: '🧻', order: 9, tone: 'cat-household' },
-  { id: 'care', label: 'Personal Care', shortLabel: 'Care', emoji: '🧴', order: 10, tone: 'cat-care' },
-  { id: 'pets', label: 'Pets', shortLabel: 'Pets', emoji: '🐾', order: 11, tone: 'cat-pets' },
-  { id: 'other', label: 'Other Goodies', shortLabel: 'Other', emoji: '✨', order: 12, tone: 'cat-other' },
+  { id: 'produce', label: 'Produce & fruit', shortLabel: 'Produce', emoji: '', order: 1, tone: 'cat-produce' },
+  { id: 'bakery', label: 'Bakery & bread', shortLabel: 'Bakery', emoji: '', order: 2, tone: 'cat-bakery' },
+  { id: 'dairy', label: 'Dairy & eggs', shortLabel: 'Dairy', emoji: '', order: 3, tone: 'cat-dairy' },
+  { id: 'meat', label: 'Meat, fish & tofu', shortLabel: 'Meat & fish', emoji: '', order: 4, tone: 'cat-meat' },
+  { id: 'pantry', label: 'Pantry & dry goods', shortLabel: 'Pantry', emoji: '', order: 5, tone: 'cat-pantry' },
+  { id: 'frozen', label: 'Frozen', shortLabel: 'Frozen', emoji: '', order: 6, tone: 'cat-frozen' },
+  { id: 'candy', label: 'Sweets & snacks', shortLabel: 'Snacks', emoji: '', order: 7, tone: 'cat-candy' },
+  { id: 'drinks', label: 'Drinks & coffee', shortLabel: 'Drinks', emoji: '', order: 8, tone: 'cat-drinks' },
+  { id: 'household', label: 'Household & paper', shortLabel: 'Household', emoji: '', order: 9, tone: 'cat-household' },
+  { id: 'care', label: 'Personal care', shortLabel: 'Care', emoji: '', order: 10, tone: 'cat-care' },
+  { id: 'pets', label: 'Pets', shortLabel: 'Pets', emoji: '', order: 11, tone: 'cat-pets' },
+  { id: 'other', label: 'Other items', shortLabel: 'Other', emoji: '', order: 12, tone: 'cat-other' },
 ] as const;
 
 export const CATEGORY_MAP: Record<CategoryId, CategoryMeta> = Object.fromEntries(

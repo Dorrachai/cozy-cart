@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Reflect <meta name="color-scheme"> override back into CSS cascade per modern-web-guidance `dark-mode-toggle` */
+/* Reflect <meta name="color-scheme"> override back into CSS cascade */
 :root {
   color-scheme: light dark;
 
@@ -11,29 +11,39 @@
     color-scheme: light;
   }
 
-  --bg-page: light-dark(#fffbf5, #17141d);
-  --bg-surface: light-dark(#ffffff, #221e2b);
-  --bg-subtle: light-dark(#f8f1e7, #2c2738);
-  --bg-hover: light-dark(#f2e8da, #352f44);
-  --border-soft: light-dark(#eadfce, #383147);
-  --border-strong: light-dark(#d8c7af, #4d4461);
+  /* Editorial Kitchen Ledger tokens (light: crisp paper + kitchen stone; dark: true neutral botanical dark) */
+  --bg-page: light-dark(#ffffff, #111210);
+  --bg-surface: light-dark(#f5f6f3, #191b18);
+  --bg-subtle: light-dark(#ecefe9, #212420);
+  --bg-hover: light-dark(#e3e7df, #282c26);
+  --bg-raised: light-dark(#ffffff, #1e211d);
 
-  --text-main: light-dark(#2e252c, #f7f2f9);
-  --text-muted: light-dark(#756670, #b6aab9);
-  --text-faint: light-dark(#9f8f99, #847889);
+  --border-soft: light-dark(#e5e8e2, #282c26);
+  --border-rule: light-dark(#ecefe9, #20231e);
+  --border-strong: light-dark(#858b81, #6c7268);
 
-  --accent-bg: light-dark(#e34c6c, #e65575);
-  --accent-hover: light-dark(#cf3b5b, #f06785);
-  --accent-soft: light-dark(#ffe6ec, #3d2430);
-  --accent-ink: light-dark(#9e2a43, #ffc4d1);
+  --text-main: light-dark(#1b1d1a, #f3f4f1);
+  --text-muted: light-dark(#565b53, #b4b8b0);
+  --text-faint: light-dark(#636860, #93988f);
 
-  --mint-soft: light-dark(#e3f7ee, #1f3930);
-  --mint-ink: light-dark(#1f6e4c, #9ce6c4);
+  /* Near-black primary action on light, crisp inverted light primary on dark (>= 16:1 contrast) */
+  --primary-bg: light-dark(#1b1d1a, #f3f4f1);
+  --primary-hover: light-dark(#2e322c, #dfe2dc);
+  --primary-ink: light-dark(#ffffff, #111210);
 
-  --shadow-card: light-dark(
-    0 4px 18px -4px rgba(88, 60, 48, 0.08),
-    0 6px 22px -4px rgba(0, 0, 0, 0.4)
-  );
+  /* Deep market herb accent (< 2% of pixels: checked checkboxes, basket progress, focus rings) */
+  --accent-bg: light-dark(#18645c, #4cc2b5);
+  --accent-hover: light-dark(#125049, #63cfc3);
+  --accent-soft: light-dark(#e1f0ed, #162e2b);
+  --accent-ink: light-dark(#0e443e, #8ce3d9);
+
+  --danger-bg: light-dark(#b42318, #c42b1e);
+  --danger-soft: light-dark(#fdecea, #2e1918);
+  --danger-ink: light-dark(#7a1d14, #f7a69f);
+  --danger-text: light-dark(#b42318, #f28b82);
+
+  --font-sans: "Instrument Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", Georgia, serif;
 }
 
 * {
@@ -46,97 +56,98 @@ body {
   padding: 0;
   background-color: var(--bg-page);
   color: var(--text-main);
-  font-family:
-    ui-rounded,
-    "Hiragino Maru Gothic ProN",
-    "Quicksand",
-    "Nunito",
-    "Segoe UI",
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  caret-color: var(--accent-bg);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Native modal dialog backdrop styling */
+::selection {
+  background-color: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-bg);
+  outline-offset: 2px;
+}
+
+.font-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native modal dialog backdrop — flat scrim, zero glass blur */
 dialog::backdrop {
-  background-color: rgba(24, 18, 28, 0.48);
-  backdrop-filter: blur(4px);
+  background-color: rgba(17, 18, 16, 0.45);
 }
 
 dialog[open] {
-  animation: cozy-pop 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: sheet-enter 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes cozy-pop {
+@keyframes sheet-enter {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* Cute pastel aisle pill tokens (high contrast in both light & dark modes) */
+@media (prefers-reduced-motion: reduce) {
+  dialog[open] {
+    animation: none;
+  }
+}
+
+/* Quiet 6px botanical aisle markers (keeps color on data markers, never loud row pills) */
 .cat-produce {
-  background-color: light-dark(#e6f8ec, #1d3a29);
-  color: light-dark(#1c6b39, #9fe8b8);
-  border-color: light-dark(#bfead0, #2c573e);
+  background-color: light-dark(#2e7d47, #5ec27d);
 }
 .cat-bakery {
-  background-color: light-dark(#fff2dd, #3c2e1b);
-  color: light-dark(#8a520d, #f9cf8e);
-  border-color: light-dark(#f6d9ab, #5a4427);
+  background-color: light-dark(#a36624, #dba05c);
 }
 .cat-dairy {
-  background-color: light-dark(#e7f3ff, #1d2f45);
-  color: light-dark(#1c588c, #a4d2ff);
-  border-color: light-dark(#c1dfff, #2d496b);
+  background-color: light-dark(#2b6999, #6fb3e8);
 }
 .cat-meat {
-  background-color: light-dark(#ffe8e8, #3f2226);
-  color: light-dark(#9a2c2c, #ffb4b8);
-  border-color: light-dark(#f9c5c5, #5d3238);
+  background-color: light-dark(#a83c3c, #e37d7d);
 }
 .cat-pantry {
-  background-color: light-dark(#f6efe4, #352d25);
-  color: light-dark(#6d4e27, #e4c9a5);
-  border-color: light-dark(#e5d5bc, #4f4337);
+  background-color: light-dark(#785c38, #c7aa82);
 }
 .cat-frozen {
-  background-color: light-dark(#e5f9fb, #1a373d);
-  color: light-dark(#156974, #99e8f2);
-  border-color: light-dark(#b9ecf2, #28535c);
+  background-color: light-dark(#1d7885, #66cad6);
 }
 .cat-candy {
-  background-color: light-dark(#ffe7f4, #3e2135);
-  color: light-dark(#9c2668, #ffb3de);
-  border-color: light-dark(#fbc3e2, #5e3250);
+  background-color: light-dark(#9c3b6e, #e082b4);
 }
 .cat-drinks {
-  background-color: light-dark(#efeaff, #2d2545);
-  color: light-dark(#56379c, #cbbaff);
-  border-color: light-dark(#d7caff, #453869);
+  background-color: light-dark(#4c5d8a, #94a7db);
 }
 .cat-household {
-  background-color: light-dark(#eaf4f4, #223537);
-  color: light-dark(#2c6266, #a9dfe3);
-  border-color: light-dark(#c7e1e2, #355255);
+  background-color: light-dark(#3b6b6e, #7dbac0);
 }
 .cat-care {
-  background-color: light-dark(#fdf0ff, #392340);
-  color: light-dark(#7d308f, #ebb9f7);
-  border-color: light-dark(#f2ccf8, #563561);
+  background-color: light-dark(#7a4b7d, #c593c9);
 }
 .cat-pets {
-  background-color: light-dark(#fff0e4, #3d2a1e);
-  color: light-dark(#8f4818, #f9c29b);
-  border-color: light-dark(#f8d3b6, #5c3f2d);
+  background-color: light-dark(#8f5228, #db9a6e);
 }
 .cat-other {
-  background-color: light-dark(#f3eef5, #2f2936);
-  color: light-dark(#5f4e69, #d4c6de);
-  border-color: light-dark(#dfd4e4, #473e52);
+  background-color: light-dark(#646960, #a0a69c);
+}
+
+@media (forced-colors: active) {
+  [data-progress-fill] {
+    background-color: Highlight;
+  }
 }

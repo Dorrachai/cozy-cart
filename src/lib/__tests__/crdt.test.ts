@@ -8,7 +8,7 @@ describe('LWW-Element-Set CRDT merging', () => {
       id: 'list-1',
       listCode: 'L-berry-mint-2345678',
       title: 'October List',
-      emoji: '🛒',
+      emoji: '',
       createdAt: 1000,
       updatedAt: 1000,
       items: {
@@ -26,8 +26,8 @@ describe('LWW-Element-Set CRDT merging', () => {
     // Partner A checks off Milk and renames list to a completely custom name
     const partnerA: ShoppingList = {
       ...baseList,
-      title: 'Cabin Weekend Trip 🌲',
-      emoji: '🌲',
+      title: 'Cabin Weekend Trip',
+      emoji: '',
       updatedAt: 2000,
       items: {
         ...baseList.items,
@@ -57,7 +57,7 @@ describe('LWW-Element-Set CRDT merging', () => {
 
     // Commutative convergence!
     expect(mergedAB).toEqual(mergedBA);
-    expect(mergedAB.title).toBe('Cabin Weekend Trip 🌲');
+    expect(mergedAB.title).toBe('Cabin Weekend Trip');
     expect(mergedAB.items.milk?.checked).toBe(true);
     expect(mergedAB.items.candy?.name).toBe('Sour gummies');
   });
@@ -72,7 +72,7 @@ describe('LWW-Element-Set CRDT merging', () => {
           id: 'l1',
           listCode: 'L-apple-oat-2345678',
           title: 'Monthly Staples',
-          emoji: '🥛',
+          emoji: '',
           createdAt: 50,
           updatedAt: 100,
         },
@@ -89,7 +89,7 @@ describe('LWW-Element-Set CRDT merging', () => {
           id: 'l2',
           listCode: 'L-peach-fig-3456789',
           title: 'Taco Friday!',
-          emoji: '🌮',
+          emoji: '',
           createdAt: 150,
           updatedAt: 200,
         },

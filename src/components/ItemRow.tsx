@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Check, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Check, Trash2 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_MAP } from '../lib/categorizer';
 import type { CategoryId, ShoppingItem } from '../types/shopping';
 
 interface ItemRowProps {
   item: ShoppingItem;
-  showCategoryBadge?: boolean;
+  showCategoryLabel?: boolean;
   onToggle: (id: string) => void;
   onChangeCategory: (id: string, category: CategoryId) => void;
   onRemove: (id: string) => void;
@@ -13,7 +13,7 @@ interface ItemRowProps {
 
 export function ItemRow({
   item,
-  showCategoryBadge = true,
+  showCategoryLabel = false,
   onToggle,
   onChangeCategory,
   onRemove,
@@ -22,50 +22,62 @@ export function ItemRow({
   const cat = CATEGORY_MAP[item.category] ?? CATEGORY_MAP.other;
 
   return (
-    <li className="group relative flex flex-col rounded-2xl transition hover:bg-[var(--bg-subtle)]/70">
-      <div className="flex min-h-12 items-center gap-2.5 px-2.5 py-1.5">
+    <li className="group relative flex flex-col border-t border-[var(--border-rule)] first:border-t-0">
+      <div className="flex min-h-11 items-center gap-3 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--bg-subtle)]/65">
         <button
           type="button"
           onClick={() => onToggle(item.id)}
           aria-pressed={item.checked}
           aria-label={item.checked ? `Uncheck ${item.name}` : `Check off ${item.name}`}
-          className={`flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition ${
+          className={`flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center rounded-[5px] border transition-colors ${
             item.checked
-              ? 'border-emerald-500 bg-emerald-500 text-white'
-              : 'border-[var(--border-strong)] bg-[var(--bg-surface)] hover:border-[var(--accent-bg)]'
+              ? 'border-[var(--accent-bg)] bg-[var(--accent-bg)] text-[var(--primary-ink)]'
+              : 'border-[var(--border-strong)] bg-[var(--bg-raised)] hover:border-[var(--accent-bg)]'
           }`}
         >
-          {item.checked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+          {item.checked && <Check className="h-3 w-3 stroke-[2.75]" />}
         </button>
 
         <button
           type="button"
           onClick={() => onToggle(item.id)}
-          className="flex min-w-0 flex-1 cursor-pointer flex-wrap items-baseline gap-1.5 text-left"
+          className="flex min-w-0 flex-1 cursor-pointer flex-wrap items-baseline gap-2 text-left"
         >
           {item.qty && (
-            <span className="shrink-0 rounded-lg bg-[var(--accent-soft)] px-1.5 py-0.5 text-xs font-extrabold text-[var(--accent-ink)]">
+            <span className="tabular shrink-0 rounded bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[13px] font-medium text-[var(--text-muted)]">
               {item.qty}
             </span>
           )}
           <span
-            className={`min-w-0 break-words [overflow-wrap:anywhere] text-sm font-semibold sm:text-[15px] ${
-              item.checked ? 'text-[var(--text-faint)] line-through' : 'text-[var(--text-main)]'
+            className={`min-w-0 break-words [overflow-wrap:anywhere] text-[15px] ${
+              item.checked
+                ? 'text-[var(--text-faint)] line-through'
+                : 'font-normal text-[var(--text-main)]'
             }`}
           >
             {item.name}
           </span>
         </button>
 
-        {showCategoryBadge && (
+        {showCategoryLabel ? (
           <button
             type="button"
             onClick={() => setCatMenuOpen((v) => !v)}
-            title="Tap to change category (household remembers for next time!)"
-            className={`${cat.tone} flex shrink-0 cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold transition hover:scale-105`}
+            title="Move to another aisle (remembered for your household)"
+            className="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
           >
-            <span>{cat.emoji}</span>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${cat.tone}`} aria-hidden="true" />
             <span className="hidden sm:inline">{cat.shortLabel}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setCatMenuOpen((v) => !v)}
+            aria-label={`Change aisle for ${item.name}`}
+            title="Move to another aisle (remembered for your household)"
+            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
           </button>
         )}
 
@@ -73,15 +85,15 @@ export function ItemRow({
           type="button"
           onClick={() => onRemove(item.id)}
           aria-label={`Delete ${item.name}`}
-          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl text-[var(--text-faint)] opacity-75 transition hover:bg-[var(--bg-hover)] hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
+          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--bg-hover)] hover:text-[var(--danger-text)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {catMenuOpen && (
-        <div className="mx-2.5 mb-2 flex flex-wrap gap-1.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-page)] p-2.5">
-          <span className="w-full text-[11px] font-bold text-[var(--text-muted)]">
+        <div className="mx-1.5 mb-2 flex flex-wrap gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-raised)] p-3">
+          <span className="w-full text-[13px] font-medium text-[var(--text-muted)]">
             Move &quot;{item.name}&quot; to aisle (saved for your household):
           </span>
           {CATEGORIES.map((c) => (
@@ -92,11 +104,13 @@ export function ItemRow({
                 onChangeCategory(item.id, c.id);
                 setCatMenuOpen(false);
               }}
-              className={`${c.tone} inline-flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition ${
-                c.id === item.category ? 'ring-2 ring-[var(--accent-bg)]' : 'opacity-90 hover:opacity-100'
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                c.id === item.category
+                  ? 'border-[var(--accent-bg)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+                  : 'border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:bg-[var(--bg-hover)]'
               }`}
             >
-              <span>{c.emoji}</span>
+              <span className={`h-2 w-2 shrink-0 rounded-full ${c.tone}`} aria-hidden="true" />
               <span>{c.shortLabel}</span>
             </button>
           ))}

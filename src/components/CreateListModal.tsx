@@ -1,9 +1,8 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { Plus } from 'lucide-react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
+import { Check, Plus } from 'lucide-react';
 import { MAX_LIST_TITLE_LENGTH } from '../hooks/useHouseholdStore';
 import { ModalDialog } from './ModalDialog';
 
-const EMOJI_CHOICES = ['🛒', '🧺', '🍓', '🥛', '🌮', '🍂', '❄️', '🌸', '☀️', '🎉', '🏕️', '🏠'];
 const COMMON_STAPLES = [
   'Milk',
   'Eggs',
@@ -35,23 +34,24 @@ export function CreateListModal({
   uncheckedCountInCurrent,
   onCreate,
 }: CreateListModalProps) {
+  const titleInputId = useId();
+
   const suggestions = useMemo(() => {
     const now = new Date();
     const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const thisMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(now);
     const nextMonth = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(nextMonthDate);
     return [
-      { label: nextMonth, emoji: '🍂' },
-      { label: thisMonth, emoji: '🛒' },
-      { label: 'Weekly Groceries', emoji: '🍓' },
-      { label: 'Taco Friday', emoji: '🌮' },
-      { label: 'Party & Snacks', emoji: '🎉' },
-      { label: 'Weekend Trip', emoji: '🏕️' },
+      nextMonth,
+      thisMonth,
+      'Weekly groceries',
+      'Taco Friday',
+      'Dinner with friends',
+      'Weekend cabin',
     ];
   }, []);
 
   const [title, setTitle] = useState('');
-  const [emoji, setEmoji] = useState('🛒');
   const [carryOver, setCarryOver] = useState(false);
   const [selectedStaples, setSelectedStaples] = useState<string[]>([]);
 
@@ -63,10 +63,10 @@ export function CreateListModal({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const finalTitle = title.trim() || suggestions[0]!.label;
+    const finalTitle = title.trim() || suggestions[0]!;
     onCreate({
       title: finalTitle,
-      emoji,
+      emoji: '',
       carryOverUnchecked: carryOver,
       initialStaples: selectedStaples,
     });
@@ -80,75 +80,51 @@ export function CreateListModal({
     <ModalDialog
       open={open}
       onClose={onClose}
-      title="Create a New Shopping List"
-      subtitle="Name it anything—a month, a trip, a dinner party, or a store!"
+      title="New shopping list"
+      subtitle="Name it anything: a month, a dinner menu, a weekend trip, or a hardware run."
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label className="mb-1.5 block text-xs font-extrabold text-[var(--text-muted)]">
-            Choose a cute icon
-          </label>
-          <div className="flex flex-wrap gap-1.5">
-            {EMOJI_CHOICES.map((em) => (
-              <button
-                key={em}
-                type="button"
-                onClick={() => setEmoji(em)}
-                className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-lg transition ${
-                  emoji === em
-                    ? 'bg-[var(--accent-soft)] ring-2 ring-[var(--accent-bg)]'
-                    : 'bg-[var(--bg-subtle)] hover:bg-[var(--bg-hover)]'
-                }`}
-              >
-                {em}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label
-            htmlFor="new-list-title"
-            className="mb-1.5 block text-xs font-extrabold text-[var(--text-muted)]"
+            htmlFor={titleInputId}
+            className="mb-1.5 block text-[14px] font-medium text-[var(--text-main)]"
           >
             List name
           </label>
           <input
-            id="new-list-title"
+            id={titleInputId}
             type="text"
+            autoFocus
             value={title}
             maxLength={MAX_LIST_TITLE_LENGTH}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={`e.g. ${suggestions[0]!.label}, Taco Night, IKEA Run…`}
-            className="h-11 w-full rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-page)] px-3.5 text-sm font-bold text-[var(--text-main)] focus:ring-2 focus:ring-[var(--accent-bg)] focus:outline-none"
+            placeholder={`e.g. ${suggestions[0]!}, Taco Friday, IKEA run`}
+            className="h-10 w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg-page)] px-3 text-[15px] text-[var(--text-main)] placeholder:text-[var(--text-faint)] focus:outline-2 focus:outline-[var(--accent-bg)]"
           />
 
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {suggestions.map((s) => (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {suggestions.map((label) => (
               <button
-                key={s.label}
+                key={label}
                 type="button"
-                onClick={() => {
-                  setTitle(s.label);
-                  setEmoji(s.emoji);
-                }}
-                className="cursor-pointer rounded-full border border-[var(--border-soft)] bg-[var(--bg-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)] transition hover:border-[var(--accent-bg)] hover:text-[var(--text-main)]"
+                onClick={() => setTitle(label)}
+                className="cursor-pointer rounded-lg border border-[var(--border-soft)] bg-[var(--bg-surface)] px-2.5 py-1 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-main)]"
               >
-                {s.emoji} {s.label}
+                {label}
               </button>
             ))}
           </div>
         </div>
 
         {uncheckedCountInCurrent > 0 && (
-          <label className="flex cursor-pointer items-center gap-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-subtle)]/60 p-3">
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-xl bg-[var(--bg-surface)] p-3">
             <input
               type="checkbox"
               checked={carryOver}
               onChange={(e) => setCarryOver(e.target.checked)}
               className="h-4 w-4 accent-[var(--accent-bg)]"
             />
-            <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+            <span className="min-w-0 flex-1 truncate text-[14px] text-[var(--text-main)]">
               Carry over {uncheckedCountInCurrent} unchecked{' '}
               {uncheckedCountInCurrent === 1 ? 'item' : 'items'} from &quot;{currentListTitle}&quot;
             </span>
@@ -156,8 +132,8 @@ export function CreateListModal({
         )}
 
         <div>
-          <span className="mb-1.5 block text-xs font-extrabold text-[var(--text-muted)]">
-            Quick-add household staples (optional)
+          <span className="mb-2 block text-[14px] font-medium text-[var(--text-main)]">
+            Include household staples (optional)
           </span>
           <div className="flex flex-wrap gap-1.5">
             {COMMON_STAPLES.map((staple) => {
@@ -167,34 +143,34 @@ export function CreateListModal({
                   key={staple}
                   type="button"
                   onClick={() => toggleStaple(staple)}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-bold transition ${
+                  className={`inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
                     active
                       ? 'border-[var(--accent-bg)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
-                      : 'border-[var(--border-soft)] bg-[var(--bg-page)] text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
+                      : 'border-[var(--border-soft)] bg-[var(--bg-page)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)]'
                   }`}
                 >
-                  {active ? '✓ ' : '+ '}
-                  {staple}
+                  {active ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                  <span>{staple}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="h-10 cursor-pointer rounded-2xl px-4 text-xs font-bold text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+            className="h-9 cursor-pointer rounded-lg px-3.5 text-[14px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)]"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-2xl bg-[var(--accent-bg)] px-5 text-sm font-bold text-white shadow-xs transition hover:bg-[var(--accent-hover)]"
+            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary-bg)] px-4 text-[14px] font-medium text-[var(--primary-ink)] transition-colors hover:bg-[var(--primary-hover)]"
           >
             <Plus className="h-4 w-4" />
-            Create List
+            <span>Create list</span>
           </button>
         </div>
       </form>

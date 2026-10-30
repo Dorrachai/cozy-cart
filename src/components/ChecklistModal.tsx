@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Check, ClipboardCopy, ClipboardPaste, Sparkles } from 'lucide-react';
+import { useId, useMemo, useState } from 'react';
+import { Check, ClipboardCopy, ClipboardPaste, Plus } from 'lucide-react';
 import { CATEGORY_MAP } from '../lib/categorizer';
 import { exportListAsChecklist, parsePastedChecklist } from '../lib/checklist';
 import { ModalDialog } from './ModalDialog';
@@ -25,8 +25,10 @@ export function ChecklistModal({
   const [groupByCategory, setGroupByCategory] = useState(true);
   const [includeChecked, setIncludeChecked] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const [pasteInput, setPasteInput] = useState('');
+
+  const exportAreaId = useId();
+  const pasteAreaId = useId();
 
   const exportedText = useMemo(
     () =>
@@ -65,34 +67,34 @@ export function ChecklistModal({
     <ModalDialog
       open={open}
       onClose={onClose}
-      title="Notes App Checklist"
-      subtitle="Heading into a store without internet? Copy your list into your phone's Notes app—or paste a Notes list back in!"
+      title="Notes app checklist"
+      subtitle="Heading into a store with poor reception? Copy your list into Apple Notes or Google Keep, or paste lines back in."
     >
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-[var(--bg-subtle)] p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--bg-surface)] p-1">
           <button
             type="button"
             onClick={() => setTab('copy')}
-            className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-extrabold transition ${
+            className={`flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[14px] font-medium transition-colors ${
               tab === 'copy'
-                ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
+                ? 'bg-[var(--bg-raised)] text-[var(--text-main)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
           >
-            <ClipboardCopy className="h-3.5 w-3.5" />
-            Copy to Notes
+            <ClipboardCopy className="h-4 w-4" />
+            <span>Copy to Notes</span>
           </button>
           <button
             type="button"
             onClick={() => setTab('paste')}
-            className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-extrabold transition ${
+            className={`flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[14px] font-medium transition-colors ${
               tab === 'paste'
-                ? 'bg-[var(--bg-surface)] text-[var(--text-main)] shadow-xs'
+                ? 'bg-[var(--bg-raised)] text-[var(--text-main)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
           >
-            <ClipboardPaste className="h-3.5 w-3.5" />
-            Paste from Notes
+            <ClipboardPaste className="h-4 w-4" />
+            <span>Paste from Notes</span>
           </button>
         </div>
 
@@ -101,19 +103,19 @@ export function ChecklistModal({
             <div className="flex flex-wrap gap-1.5">
               {(
                 [
-                  { id: 'unicode', label: '☐ Checkboxes (Universal)' },
-                  { id: 'notes-plain', label: 'Apple Notes / Keep Lines' },
-                  { id: 'markdown', label: '- [ ] Markdown' },
+                  { id: 'unicode', label: 'Checkboxes (universal)' },
+                  { id: 'notes-plain', label: 'Apple Notes / Keep lines' },
+                  { id: 'markdown', label: 'Markdown (- [ ])' },
                 ] as const
               ).map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setFormat(opt.id)}
-                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                  className={`cursor-pointer rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${
                     format === opt.id
                       ? 'border-[var(--accent-bg)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
-                      : 'border-[var(--border-soft)] bg-[var(--bg-page)] text-[var(--text-muted)]'
+                      : 'border-[var(--border-soft)] bg-[var(--bg-page)] text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-main)]'
                   }`}
                 >
                   {opt.label}
@@ -121,7 +123,7 @@ export function ChecklistModal({
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-4 text-xs font-semibold text-[var(--text-muted)]">
+            <div className="flex flex-wrap gap-4 text-[14px] text-[var(--text-muted)]">
               <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
@@ -129,7 +131,7 @@ export function ChecklistModal({
                   onChange={(e) => setGroupByCategory(e.target.checked)}
                   className="h-4 w-4 accent-[var(--accent-bg)]"
                 />
-                Group by aisle
+                <span>Group by aisle</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -138,54 +140,65 @@ export function ChecklistModal({
                   onChange={(e) => setIncludeChecked(e.target.checked)}
                   className="h-4 w-4 accent-[var(--accent-bg)]"
                 />
-                Include checked items
+                <span>Include checked items</span>
               </label>
             </div>
 
-            <textarea
-              readOnly
-              value={exportedText}
-              rows={8}
-              aria-label="Formatted checklist text"
-              onFocus={(e) => e.currentTarget.select()}
-              className="w-full resize-y rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-page)] p-3 font-mono text-xs leading-relaxed text-[var(--text-main)] focus:outline-none"
-            />
+            <div>
+              <label htmlFor={exportAreaId} className="sr-only">
+                Formatted checklist text
+              </label>
+              <textarea
+                id={exportAreaId}
+                readOnly
+                value={exportedText}
+                rows={8}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full resize-y rounded-xl border border-[var(--border-strong)] bg-[var(--bg-page)] p-3 text-[14px] leading-relaxed text-[var(--text-main)] focus:outline-2 focus:outline-[var(--accent-bg)]"
+              />
+            </div>
 
             <button
               type="button"
               onClick={handleCopy}
-              className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--accent-bg)] text-sm font-extrabold text-white shadow-xs transition hover:bg-[var(--accent-hover)]"
+              className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--primary-bg)] text-[14px] font-medium text-[var(--primary-ink)] transition-colors hover:bg-[var(--primary-hover)]"
             >
               {copied ? (
                 <>
-                  <Check className="h-4 w-4 stroke-[2.5]" />
-                  Copied! Ready to paste in Notes ✨
+                  <Check className="h-4 w-4" />
+                  <span>Copied to clipboard</span>
                 </>
               ) : (
                 <>
                   <ClipboardCopy className="h-4 w-4" />
-                  Copy Checklist
+                  <span>Copy checklist</span>
                 </>
               )}
             </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3.5">
-            <textarea
-              value={pasteInput}
-              onChange={(e) => setPasteInput(e.target.value)}
-              rows={7}
-              placeholder={"Paste lines from Apple Notes, Google Keep, or messages:\n- [ ] 2x Oat milk\n☐ Sour gummies\n• Sourdough bread"}
-              aria-label="Paste checklist lines"
-              className="w-full resize-y rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-page)] p-3 text-sm leading-relaxed text-[var(--text-main)] placeholder:text-[var(--text-faint)] focus:ring-2 focus:ring-[var(--accent-bg)] focus:outline-none"
-            />
+            <div>
+              <label htmlFor={pasteAreaId} className="sr-only">
+                Paste checklist lines
+              </label>
+              <textarea
+                id={pasteAreaId}
+                value={pasteInput}
+                onChange={(e) => setPasteInput(e.target.value)}
+                rows={7}
+                placeholder={
+                  'Paste lines from Apple Notes, Google Keep, or messages:\n- [ ] 2x Oat milk\n- Sourdough bread\n- Cherry tomatoes'
+                }
+                className="w-full resize-y rounded-xl border border-[var(--border-strong)] bg-[var(--bg-page)] p-3 text-[14px] leading-relaxed text-[var(--text-main)] placeholder:text-[var(--text-faint)] focus:outline-2 focus:outline-[var(--accent-bg)]"
+              />
+            </div>
 
             {parsedPreview.length > 0 && (
-              <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-subtle)]/60 p-3">
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-muted)]">
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--accent-ink)]" />
-                  Auto-sorting {parsedPreview.length}{' '}
-                  {parsedPreview.length === 1 ? 'item' : 'items'}:
+              <div className="rounded-xl bg-[var(--bg-surface)] p-3">
+                <p className="tabular mb-2 text-[13px] font-medium text-[var(--text-muted)]">
+                  Detected {parsedPreview.length}{' '}
+                  {parsedPreview.length === 1 ? 'item' : 'items'} by aisle:
                 </p>
                 <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
                   {parsedPreview.map((p, idx) => {
@@ -193,9 +206,12 @@ export function ChecklistModal({
                     return (
                       <span
                         key={`${p.name}-${idx}`}
-                        className={`${cat.tone} inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-soft)] bg-[var(--bg-raised)] px-2.5 py-1 text-[13px] font-medium text-[var(--text-main)]"
                       >
-                        <span>{cat.emoji}</span>
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${cat.tone}`}
+                          aria-hidden="true"
+                        />
                         <span>
                           {p.qty ? `${p.qty} ` : ''}
                           {p.name}
@@ -211,10 +227,12 @@ export function ChecklistModal({
               type="button"
               disabled={parsedPreview.length === 0}
               onClick={handleImport}
-              className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[var(--accent-bg)] text-sm font-extrabold text-white shadow-xs transition hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--primary-bg)] text-[14px] font-medium text-[var(--primary-ink)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Sparkles className="h-4 w-4" />
-              Add &amp; Auto-Sort {parsedPreview.length > 0 ? `${parsedPreview.length} Items` : 'Items'}
+              <Plus className="h-4 w-4" />
+              <span>
+                Add {parsedPreview.length > 0 ? `${parsedPreview.length} items` : 'items'} to list
+              </span>
             </button>
           </div>
         )}

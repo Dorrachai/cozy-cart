@@ -87,7 +87,7 @@ export function sanitizeShoppingList(
   const fallbackId = safePinnedCode.slice(-12).replace(/[^A-Za-z0-9]/g, '').toLowerCase() || 'list01';
   const id = sanitizeSafeId(raw.id) ?? fallbackId;
   const title = stripControlChars(raw.title, 60) || 'Shopping List';
-  const emoji = stripControlChars(raw.emoji, 16) || '🛒';
+  const emoji = stripControlChars(raw.emoji, 16);
   const createdAt = sanitizeTimestamp(raw.createdAt, now, maxFuture);
   const updatedAt = sanitizeTimestamp(raw.updatedAt, createdAt, maxFuture);
 
@@ -171,7 +171,7 @@ export function sanitizeHouseholdIndex(raw: unknown, now = Date.now()): Househol
       }
 
       const title = stripControlChars(refRaw.title, 60) || 'Shopping List';
-      const emoji = stripControlChars(refRaw.emoji, 16) || '🛒';
+      const emoji = stripControlChars(refRaw.emoji, 16);
       const refCreated = sanitizeTimestamp(refRaw.createdAt, updatedAt, maxFuture);
       const refUpdated = sanitizeTimestamp(refRaw.updatedAt, refCreated, maxFuture);
       const deletedAt =
