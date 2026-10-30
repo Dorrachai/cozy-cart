@@ -11,8 +11,8 @@ interface HeaderProps {
 }
 
 /**
- * Compact mobile & tablet top bar (< 1024px).
- * On desktop (>= 1024px), the Open-Plane left sidebar replaces top-bar chrome completely.
+ * Compact mobile and tablet top bar (< 1024px).
+ * On desktop (>= 1024px), navigation and list actions live in the left rail and sheet header.
  */
 export function Header({
   activeList,

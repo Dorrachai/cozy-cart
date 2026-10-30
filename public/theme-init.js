@@ -1,4 +1,4 @@
-// Synchronous FOUC-prevention script following modern-web-guidance `dark-mode-toggle`.
+// Apply stored color-scheme preference before first paint to prevent FOUC.
 try {
   var saved = localStorage.getItem('color-scheme');
   var meta = document.querySelector('meta[name="color-scheme"]');
@@ -6,5 +6,5 @@ try {
     meta.content = saved;
   }
 } catch (_) {
-  // Ignore storage access errors in strict privacy contexts
+  // Ignore storage access errors in restricted privacy contexts
 }

@@ -134,7 +134,7 @@ export function AisleBoard({
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      {/* Editorial Sheet Header (Open-Plane, overflow-proof for any custom list name) */}
+      {/* List Title & Toolbar */}
       <div className="flex flex-col gap-3">
         {editingTitle ? (
           <form onSubmit={commitRename} className="flex flex-wrap items-center gap-2">
@@ -251,7 +251,7 @@ export function AisleBoard({
           </div>
         )}
 
-        {/* Signature Element: 3px true-ratio basket progress rule (zero stub at 0%) */}
+        {/* Basket Completion Progress */}
         {totalActiveCount > 0 && (
           <div
             role="progressbar"

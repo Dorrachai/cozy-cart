@@ -1,50 +1,60 @@
-# 🧺 CozyCart — Cute, Private Shared Household Shopping Lists
+# CozyCart
 
-A **100% free (`$0`/month)**, lightweight **React 19 + TypeScript + Vite + Tailwind CSS v4** web app designed for **GitHub Pages**, supporting both **smartphone** and **PC** browsers.
+Shared household shopping lists with client-side end-to-end encryption and local multilingual aisle sorting.
 
-## ✨ Highlights
+**[Open live app](https://dorrachai.github.io/cozy-cart/)**
 
-- **Name Lists Anything**: Create monthly lists (*November 2026*), weekly grocery runs, dinner parties (*Taco Friday 🌮*), or any custom name without breaking mobile or desktop layouts.
-- **No Login — Two-Tier Friend Codes**:
-  - **Household Code (`H-…`)**: Share once with your partner or roommates so everyone sees all household lists automatically.
-  - **Single-List Code (`L-…`)**: Share *only* one specific list with friends/guests while keeping the rest of your household private.
-- **Privacy by Design (Zero-Knowledge Browser E2EE)**:
-  - Friend Codes derive a `64`-char SHA-256 document ID and a `256`-bit `AES-GCM` encryption key via Web Crypto `PBKDF2` (`210,000` iterations) right inside your browser.
-  - Invite links place the Friend Code strictly inside the URL `#hash` fragment (`#join=…`), which is **never transmitted over HTTP** to GitHub Pages or any server.
-  - Firebase Firestore only ever stores opaque ciphertext (`ct`, `iv`, `rev`, `updatedAt`).
-- **Private Multilingual Auto-Sorting**:
-  - Powered by a compact distilled **Open Food Facts multilingual taxonomy** (`14.6 KB` gzipped) + **Fuse.js** fuzzy matching + compound-word suffix rules (supporting English, Swedish, German, Spanish, French, and more) with **zero external API calls**.
-  - Tapping an item's aisle pill teaches your household's encrypted dictionary for future lists.
-- **1-Tap Copy & Paste Notes Checklist**:
-  - Heading into a store with poor reception? Tap **Notes** to copy a formatted checklist (`☐` checkboxes, Apple Notes / Google Keep clean lines, or `- [ ]` Markdown), or paste lines from your Notes app right back into CozyCart to auto-sort them.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/preview-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./docs/preview-light.png">
+  <img alt="CozyCart desktop workspace" src="./docs/preview-light.png">
+</picture>
 
----
+## Overview
 
-## 🚀 Deploy Free to GitHub Pages (3 Minutes)
+Most shared grocery apps require every member of a household to register an account, run third-party analytics SDKs, or store plaintext shopping habits on a central server.
 
-1. Push this folder to a GitHub repository on the `main` branch.
-2. In your GitHub repo, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**.
-3.*(Optional — for cross-device phone-to-phone sync)* Connect a `$0` **Firebase Spark** project (no credit card required):
-   - Go to [console.firebase.google.com](https://console.firebase.google.com/) and create a free project.
-   - Enable **Authentication → Sign-in method → Anonymous**.
-   - Enable **Firestore Database** and paste the rules from [`firestore.rules`](./firestore.rules) into the **Rules** tab.
-   - Register a **Web App** in Project Settings to copy your public `firebaseConfig` values, and add them in GitHub under **Settings → Secrets and variables → Actions → Variables**:
-     - `VITE_FIREBASE_API_KEY`
-     - `VITE_FIREBASE_AUTH_DOMAIN`
-     - `VITE_FIREBASE_PROJECT_ID`
-     - `VITE_FIREBASE_STORAGE_BUCKET`
-     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
-     - `VITE_FIREBASE_APP_ID`
-   - *(Recommended)* In Google Cloud Console → **APIs & Services → Credentials**, restrict the Browser API key's **HTTP referrers** to `https://<your-github-username>.github.io/*`.
-4. Trigger or push to `main` — [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) runs `Vitest` unit tests, builds `./dist`, and deploys straight to GitHub Pages!
+CozyCart is a static web client built with React 19, TypeScript, Vite, and Tailwind CSS v4. Lists are encrypted in the browser via the Web Crypto API before sync, organized automatically into supermarket aisles on-device, and shared across phones and desktops using human-readable capability codes instead of user accounts.
 
----
+## Capabilities
 
-## 🛠️ Local Development
+- **Two-tier capability codes**: A Household Code (`H-...`) syncs all household lists across partners or roommates. A Single-List Code (`L-...`) shares one specific list (such as a dinner party or weekend trip) without exposing the rest of the household workspace.
+- **On-device multilingual aisle sorting**: Items are categorized locally against a distilled `14.6 KB` Open Food Facts taxonomy (`2,563` terms across 9 languages), compound-word suffix rules, and Fuse.js fuzzy matching, with zero external API requests. Moving an item teaches the household's encrypted dictionary for future lists.
+- **Plain-text Notes interoperability**: Lists export in one click as Unicode checkboxes, clean Apple Notes / Google Keep lines, or Markdown (`- [ ]`), and multi-line checklists pasted from a phone's Notes app are parsed (`2x`, `500g`, checked states) and sorted automatically.
+- **Responsive desktop & mobile workspace**: Persistent rail and two-column aisle board on desktop; thumb-anchored quick-add bar and list switcher sheet on mobile, supporting system and manual light/dark themes.
+
+## Architecture & Security
+
+### Zero-knowledge key derivation
+Friend Codes (`47` bits of entropy: two dictionary words plus 7 unambiguous Base32 characters) pass through `PBKDF2-HMAC-SHA256` (`210,000` iterations) in the browser to derive `512` bits of key material:
+- **Bytes `0..31`** are hashed with `SHA-256` to form a `64`-character hex Firestore document ID.
+- **Bytes `32..63`** are imported as a non-extractable `256`-bit `AES-GCM` key.
+
+Invite URLs and QR codes place the capability code strictly inside the URL fragment (`#join=...`), which browsers never transmit in HTTP requests to GitHub Pages or upstream proxies. Firestore stores only `{ ct, iv, rev, updatedAt }` ciphertext envelopes.
+
+### Conflict-free concurrent sync
+Each list is stored as a single encrypted envelope to keep read/write volume minimal. Concurrent item additions, check-offs, and list renames are merged client-side inside an optimistic Firestore transaction (`rev + 1`) using a deterministic Last-Write-Wins Element-Set (`LWW-Element-Set`) CRDT with `30`-day soft-delete tombstones ([`src/lib/crdt.ts`](./src/lib/crdt.ts)). Server-side [`firestore.rules`](./firestore.rules) block collection enumeration (`allow list: if false`) and enforce monotonic revision increments.
+
+### Untrusted input & QR hardening
+QR and `#join=` invites validate against a strict `[A-Za-z0-9-]` grammar and pin generated invite links to the application's own HTTP(S) origin ([`src/lib/crypto.ts`](./src/lib/crypto.ts)). Decrypted payloads pass through schema validation, control-character stripping, capability-code pinning, and CRDT timestamp clamping ([`src/lib/sanitize.ts`](./src/lib/sanitize.ts)) under a strict `script-src 'self'` Content-Security-Policy.
+
+## Local Development
 
 ```bash
 npm install
-npm test -- --run      # Run Vitest unit tests (crypto, CRDT, categorizer, Notes checklist)
-npm run dev            # Start local dev server
-npm run build          # Type-check & build production static bundle into dist/
+npm run dev              # Start local Vite dev server
+npm test -- --run        # Run Vitest suite (crypto, sanitize, CRDT, categorizer, checklist)
+npm run taxonomy:verify  # Verify distilled Open Food Facts taxonomy integrity & gzip budget
+npm run build            # Type-check and build static production bundle into dist/
 ```
+
+When run without environment variables, CozyCart operates locally using `localStorage` and `BroadcastChannel`, allowing multi-tab sync testing with zero cloud setup.
+
+To connect cross-device cloud sync via Firebase (Spark free tier):
+1. Copy [`.env.example`](./.env.example) to `.env.local` and fill in your Firebase Web App config values.
+2. Enable **Anonymous Authentication** and **Cloud Firestore** in your Firebase project, then deploy [`firestore.rules`](./firestore.rules).
+3. Restrict your browser API key's HTTP referrers in Google Cloud Console to your deployed domain.
+
+## License
+
+[MIT](./LICENSE)

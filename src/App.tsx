@@ -16,9 +16,6 @@ const ShareModal = lazy(() =>
   import('./components/ShareModal').then((m) => ({ default: m.ShareModal }))
 );
 
-/**
- * Authored 1.5px-stroke market basket mark (no system emoji icons).
- */
 function BasketMark() {
   return (
     <svg
@@ -85,7 +82,7 @@ export function App() {
         onOpenShareModal={() => setShareModalState({ open: true, tab: 'household' })}
       />
 
-      {/* Desktop Open-Plane Left Rail (>= 1024px): sits flush on tonal ground with one 1px rule */}
+      {/* Desktop Sidebar (>= 1024px) */}
       <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-r lg:border-[var(--border-soft)] lg:bg-[var(--bg-surface)]">
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <div className="flex items-center gap-2">

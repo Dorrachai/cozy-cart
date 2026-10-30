@@ -11,7 +11,7 @@
     color-scheme: light;
   }
 
-  /* Editorial Kitchen Ledger tokens (light: crisp paper + kitchen stone; dark: true neutral botanical dark) */
+  /* Surface, border, typography, and semantic accent tokens */
   --bg-page: light-dark(#ffffff, #111210);
   --bg-surface: light-dark(#f5f6f3, #191b18);
   --bg-subtle: light-dark(#ecefe9, #212420);

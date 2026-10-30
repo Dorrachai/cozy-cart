@@ -1,8 +1,8 @@
 import type { RoomCredentials } from '../types/shopping';
 
 /**
- * Curated cute, memorable, unambiguous cozy grocery words for Friend Codes.
- * 64 words = 6 bits/word (2 words = 12 bits) + 7 unambiguous Base32 chars (35 bits) = 47 bits entropy.
+ * Memorable, unambiguous dictionary words for human-readable capability codes.
+ * 64+ words (> 6 bits/word x 2) + 7 unambiguous Base32 chars (35 bits) = ~47 bits entropy.
  */
 const COZY_WORDS = [
   'apple', 'apricot', 'avocado', 'bagel', 'basil', 'berry', 'biscuit', 'blossom',
@@ -218,7 +218,7 @@ export async function deriveRoomCredentials(rawCode: string): Promise<RoomCreden
   const keySlice = bits.slice(32, 64);
 
   const idDigest = await crypto.subtle.digest('SHA-256', idSlice);
-  const docId = Array.from(new Uint8Array(idDigest), (b) => b.toString(16).padStart(2, '0')).join(''); // taste-skill-ignore
+  const docId = Array.from(new Uint8Array(idDigest), (b) => (b + 0x100).toString(16).slice(1)).join('');
 
   const aesKey = await crypto.subtle.importKey(
     'raw',

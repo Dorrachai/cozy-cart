@@ -2,7 +2,13 @@
   "name": "cozy-cart",
   "private": true,
   "version": "1.0.0",
-  "description": "Simple, cute, end-to-end encrypted shared household shopping lists for GitHub Pages",
+  "description": "End-to-end encrypted household shopping lists with local multilingual aisle categorization.",
+  "homepage": "https://dorrachai.github.io/cozy-cart/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dorrachai/cozy-cart.git"
+  },
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "taxonomy": "node scripts/build-taxonomy.mjs",
