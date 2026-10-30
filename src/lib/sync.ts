@@ -2,12 +2,24 @@ import { decryptPayload, encryptPayload } from './crypto';
 import type { EncryptedEnvelope, RoomCredentials } from '../types/shopping';
 
 const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
+  apiKey:
+    (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined) ||
+    'AIzaSyAEABLrV3BK5OArY4uPQrOlMpU0DOXATlk',
+  authDomain:
+    (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined) ||
+    'cozycart-cb33f.firebaseapp.com',
+  projectId:
+    (import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined) ||
+    'cozycart-cb33f',
+  storageBucket:
+    (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined) ||
+    'cozycart-cb33f.firebasestorage.app',
+  messagingSenderId:
+    (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) ||
+    '585491215492',
+  appId:
+    (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) ||
+    '1:585491215492:web:213c4cdae00678b5f93ed1',
 };
 
 export function isCloudSyncConfigured(): boolean {

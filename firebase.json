@@ -1,7 +1,9 @@
 {
   "firestore": {
     "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "indexes": "firestore.indexes.json",
+    "database": "(default)",
+    "location": "eur3"
   },
   "auth": {
     "providers": {
