@@ -22,8 +22,8 @@ export function ItemRow({
   const cat = CATEGORY_MAP[item.category] ?? CATEGORY_MAP.other;
 
   return (
-    <li className="group relative flex flex-col border-t border-[var(--border-rule)] first:border-t-0">
-      <div className="flex min-h-11 items-center gap-3 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--bg-subtle)]/65">
+    <li className="group relative flex flex-col border-t border-[var(--aisle-rule,var(--border-rule))] first:border-t-0">
+      <div className="flex min-h-11 items-center gap-3 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--aisle-pill-bg,var(--bg-subtle))]/50">
         <button
           type="button"
           onClick={() => onToggle(item.id)}
@@ -44,7 +44,7 @@ export function ItemRow({
           className="flex min-w-0 flex-1 cursor-pointer flex-wrap items-baseline gap-2 text-left"
         >
           {item.qty && (
-            <span className="tabular shrink-0 rounded bg-[var(--bg-subtle)] px-1.5 py-0.5 text-[13px] font-medium text-[var(--text-muted)]">
+            <span className="tabular shrink-0 rounded bg-[var(--aisle-pill-bg,var(--bg-subtle))] px-1.5 py-0.5 text-[13px] font-medium text-[var(--aisle-ink,var(--text-muted))]">
               {item.qty}
             </span>
           )}
@@ -64,9 +64,9 @@ export function ItemRow({
             type="button"
             onClick={() => setCatMenuOpen((v) => !v)}
             title="Move to another aisle (remembered for your household)"
-            className="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
+            className={`${cat.tone} flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[var(--aisle-pill-bg)] px-2 text-[13px] font-medium text-[var(--aisle-ink)] transition-opacity hover:opacity-85`}
           >
-            <span className={`h-2 w-2 shrink-0 rounded-full ${cat.tone}`} aria-hidden="true" />
+            <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--aisle-dot)]" aria-hidden="true" />
             <span className="hidden sm:inline">{cat.shortLabel}</span>
           </button>
         ) : (
@@ -75,7 +75,7 @@ export function ItemRow({
             onClick={() => setCatMenuOpen((v) => !v)}
             aria-label={`Change aisle for ${item.name}`}
             title="Move to another aisle (remembered for your household)"
-            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--aisle-pill-bg,var(--bg-hover))] hover:text-[var(--text-main)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
           >
             <ArrowLeftRight className="h-3.5 w-3.5" />
           </button>
@@ -85,7 +85,7 @@ export function ItemRow({
           type="button"
           onClick={() => onRemove(item.id)}
           aria-label={`Delete ${item.name}`}
-          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--bg-hover)] hover:text-[var(--danger-text)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-[var(--aisle-pill-bg,var(--bg-hover))] hover:text-[var(--danger-text)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -104,13 +104,13 @@ export function ItemRow({
                 onChangeCategory(item.id, c.id);
                 setCatMenuOpen(false);
               }}
-              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
+              className={`${c.tone} inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
                 c.id === item.category
-                  ? 'border-[var(--accent-bg)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
-                  : 'border-[var(--border-soft)] bg-[var(--bg-surface)] text-[var(--text-main)] hover:bg-[var(--bg-hover)]'
+                  ? 'border-[var(--aisle-dot)] bg-[var(--aisle-pill-bg)] text-[var(--aisle-ink)]'
+                  : 'border-[var(--aisle-rule)] bg-[var(--aisle-bg)] text-[var(--aisle-ink)] hover:bg-[var(--aisle-pill-bg)]'
               }`}
             >
-              <span className={`h-2 w-2 shrink-0 rounded-full ${c.tone}`} aria-hidden="true" />
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--aisle-dot)]" aria-hidden="true" />
               <span>{c.shortLabel}</span>
             </button>
           ))}

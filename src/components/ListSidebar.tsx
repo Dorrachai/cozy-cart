@@ -60,12 +60,18 @@ export function ListSidebarContent({
                     title={list.title}
                     className={`flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 text-left text-[14px] transition-colors ${
                       isActive
-                        ? 'bg-[var(--bg-hover)] font-medium text-[var(--text-main)]'
-                        : 'font-normal text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-main)]'
+                        ? 'bg-[var(--nav-active-bg)] font-medium text-[var(--nav-active-ink)]'
+                        : 'font-normal text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate">{list.title}</span>
-                    <span className="tabular shrink-0 text-[13px] text-[var(--text-muted)]">
+                    <span
+                      className={`tabular shrink-0 rounded px-1.5 py-0.5 text-[13px] ${
+                        isActive
+                          ? 'bg-[var(--nav-active-badge)] text-[var(--nav-active-ink)]'
+                          : 'text-[var(--text-muted)]'
+                      }`}
+                    >
                       {remaining}
                     </span>
                   </button>
@@ -103,12 +109,18 @@ export function ListSidebarContent({
                       title={list.title}
                       className={`flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 text-left text-[14px] transition-colors ${
                         isActive
-                          ? 'bg-[var(--bg-hover)] font-medium text-[var(--text-main)]'
-                          : 'font-normal text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-main)]'
+                          ? 'bg-[var(--nav-active-bg)] font-medium text-[var(--nav-active-ink)]'
+                          : 'font-normal text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
                       }`}
                     >
                       <span className="min-w-0 flex-1 truncate">{list.title}</span>
-                      <span className="tabular shrink-0 text-[13px] text-[var(--text-muted)]">
+                      <span
+                        className={`tabular shrink-0 rounded px-1.5 py-0.5 text-[13px] ${
+                          isActive
+                            ? 'bg-[var(--nav-active-badge)] text-[var(--nav-active-ink)]'
+                            : 'text-[var(--text-muted)]'
+                        }`}
+                      >
                         {remaining}
                       </span>
                     </button>

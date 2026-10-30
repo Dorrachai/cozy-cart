@@ -1,4 +1,12 @@
-import { useId, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useId,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import {
   Check,
   ChevronDown,
@@ -37,10 +45,28 @@ const EMPTY_STAPLE_GROUPS: ReadonlyArray<{
   },
   {
     title: 'Household & treats',
-    tone: 'cat-household',
+    tone: 'cat-candy',
     items: ['Dish soap', 'Paper towels', 'Dark chocolate', 'Sparkling water'],
   },
 ];
+
+const TWO_COL_QUERY = '(min-width: 768px)';
+
+function subscribeTwoColumn(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return () => {};
+  }
+  const mql = window.matchMedia(TWO_COL_QUERY);
+  mql.addEventListener('change', onStoreChange);
+  return () => mql.removeEventListener('change', onStoreChange);
+}
+
+function getTwoColumnSnapshot(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia(TWO_COL_QUERY).matches;
+}
 
 interface AisleBoardProps {
   list: ShoppingList;
@@ -76,6 +102,7 @@ export function AisleBoard({
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState(list.title);
   const renameInputId = useId();
+  const isTwoColumn = useSyncExternalStore(subscribeTwoColumn, getTwoColumnSnapshot, () => false);
 
   const { unchecked, checked } = useMemo(() => {
     const u: ShoppingItem[] = [];
@@ -102,6 +129,47 @@ export function AisleBoard({
       items: (map.get(cat.id) ?? []).sort((a, b) => a.name.localeCompare(b.name)),
     })).filter((g) => g.items.length > 0);
   }, [unchecked]);
+
+  const balancedColumns = useMemo(() => {
+    if (groupedAisles.length <= 1) {
+      return { cols: [groupedAisles, []] as const, diff: 0 };
+    }
+    const n = groupedAisles.length;
+    const heights = groupedAisles.map((g) => 58 + g.items.length * 42.5);
+    let bestMask = 0;
+    let bestDiff = Infinity;
+    const limit = 1 << (n - 1);
+    for (let mask = 0; mask < limit; mask++) {
+      let leftH = heights[0]!;
+      let leftCount = 1;
+      let rightH = 0;
+      let rightCount = 0;
+      for (let i = 1; i < n; i++) {
+        if ((mask & (1 << (i - 1))) !== 0) {
+          rightH += heights[i]!;
+          rightCount++;
+        } else {
+          leftH += heights[i]!;
+          leftCount++;
+        }
+      }
+      if (rightCount === 0) continue;
+      leftH += (leftCount - 1) * 15;
+      rightH += (rightCount - 1) * 15;
+      const diff = Math.abs(leftH - rightH);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestMask = mask;
+      }
+    }
+    const left: typeof groupedAisles = [groupedAisles[0]!];
+    const right: typeof groupedAisles = [];
+    for (let i = 1; i < n; i++) {
+      if ((bestMask & (1 << (i - 1))) !== 0) right.push(groupedAisles[i]!);
+      else left.push(groupedAisles[i]!);
+    }
+    return { cols: [left, right] as const, diff: bestDiff };
+  }, [groupedAisles]);
 
   const startEditing = () => {
     setDraftTitle(list.title);
@@ -192,7 +260,14 @@ export function AisleBoard({
                   </span>
                 )}
               </div>
-              <p className="tabular mt-1 text-[14px] text-[var(--text-muted)]">{statusLine}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[14px]">
+                <span className="tabular text-[var(--text-muted)]">{statusLine}</span>
+                {checked.length > 0 && unchecked.length > 0 && (
+                  <span className="tabular rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-[13px] font-medium text-[var(--accent-ink)]">
+                    {progressPercent}% gathered
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Compact Segmented View Switch + Desktop List Actions */}
@@ -259,7 +334,7 @@ export function AisleBoard({
             aria-valuemin={0}
             aria-valuemax={totalActiveCount}
             aria-valuenow={checked.length}
-            className="h-[3px] w-full overflow-hidden rounded-full bg-[var(--bg-surface)]"
+            className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--accent-soft)]"
           >
             <div
               data-progress-fill=""
@@ -289,31 +364,33 @@ export function AisleBoard({
             {EMPTY_STAPLE_GROUPS.map((group) => (
               <section
                 key={group.title}
-                className="rounded-xl bg-[var(--bg-surface)] px-4 py-3.5"
+                className={`${group.tone} rounded-xl border border-[var(--aisle-rule)] bg-[var(--aisle-bg)] px-4 py-3.5`}
               >
                 <div className="mb-2 flex items-center justify-between px-1.5">
-                  <h3 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--text-main)]">
+                  <h3 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--aisle-ink)]">
                     <span
-                      className={`h-2 w-2 shrink-0 rounded-full ${group.tone}`}
+                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--aisle-dot)]"
                       aria-hidden="true"
                     />
                     <span>{group.title}</span>
                   </h3>
-                  <span className="text-[13px] text-[var(--text-muted)]">Quick add</span>
+                  <span className="rounded-md bg-[var(--aisle-pill-bg)] px-2 py-0.5 text-[13px] font-medium text-[var(--aisle-ink)]">
+                    Quick add
+                  </span>
                 </div>
                 <ul role="list">
                   {group.items.map((sample) => (
                     <li
                       key={sample}
-                      className="border-t border-[var(--border-rule)] first:border-t-0"
+                      className="border-t border-[var(--aisle-rule)] first:border-t-0"
                     >
                       <button
                         type="button"
                         onClick={() => onQuickAddStarter(sample)}
-                        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-lg px-1.5 text-left text-[14px] text-[var(--text-main)] transition-colors hover:bg-[var(--bg-subtle)]/70"
+                        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-lg px-1.5 text-left text-[14px] text-[var(--text-main)] transition-colors hover:bg-[var(--aisle-pill-bg)]/55"
                       >
                         <span>{sample}</span>
-                        <Plus className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
+                        <Plus className="h-4 w-4 shrink-0 text-[var(--aisle-ink)]" />
                       </button>
                     </li>
                   ))}
@@ -324,41 +401,90 @@ export function AisleBoard({
         </div>
       )}
 
-      {/* Unchecked Items Grouped by Aisle (flat tonal panels, zero repeated row badges) */}
+      {/* Unchecked Items Grouped by Aisle */}
       {unchecked.length > 0 && viewMode === 'aisle' && (
-        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-          {groupedAisles.map(({ cat, items }) => (
-            <section
-              key={cat.id}
-              className="rounded-xl bg-[var(--bg-surface)] px-4 py-3.5"
-            >
-              <div className="mb-1.5 flex items-center justify-between px-1.5">
-                <h2 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--text-main)]">
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${cat.tone}`}
-                    aria-hidden="true"
-                  />
-                  <span>{cat.label}</span>
-                </h2>
-                <span className="tabular text-[13px] font-medium text-[var(--text-muted)]">
-                  {items.length}
-                </span>
-              </div>
-              <ul role="list">
-                {items.map((item) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    showCategoryLabel={false}
-                    onToggle={onToggleItem}
-                    onChangeCategory={onChangeItemCategory}
-                    onRemove={onRemoveItem}
-                  />
+        isTwoColumn && balancedColumns.cols[1].length > 0 ? (
+          <div
+            className={`grid grid-cols-2 gap-4 ${
+              balancedColumns.diff <= 36 ? '' : 'items-start'
+            }`}
+          >
+            {balancedColumns.cols.map((col, colIdx) => (
+              <div
+                key={colIdx}
+                className={`flex min-w-0 flex-col gap-4 ${
+                  balancedColumns.diff <= 36 ? '[&>section:last-child]:flex-1' : ''
+                }`}
+              >
+                {col.map(({ cat, items }) => (
+                  <section
+                    key={cat.id}
+                    className={`${cat.tone} rounded-xl border border-[var(--aisle-rule)] bg-[var(--aisle-bg)] px-4 py-3.5`}
+                  >
+                    <div className="mb-1.5 flex items-center justify-between px-1.5">
+                      <h2 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--aisle-ink)]">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--aisle-dot)]"
+                          aria-hidden="true"
+                        />
+                        <span>{cat.label}</span>
+                      </h2>
+                      <span className="tabular rounded-md bg-[var(--aisle-pill-bg)] px-2 py-0.5 text-[13px] font-medium text-[var(--aisle-ink)]">
+                        {items.length}
+                      </span>
+                    </div>
+                    <ul role="list">
+                      {items.map((item) => (
+                        <ItemRow
+                          key={item.id}
+                          item={item}
+                          showCategoryLabel={false}
+                          onToggle={onToggleItem}
+                          onChangeCategory={onChangeItemCategory}
+                          onRemove={onRemoveItem}
+                        />
+                      ))}
+                    </ul>
+                  </section>
                 ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+            {groupedAisles.map(({ cat, items }) => (
+              <section
+                key={cat.id}
+                className={`${cat.tone} rounded-xl border border-[var(--aisle-rule)] bg-[var(--aisle-bg)] px-4 py-3.5`}
+              >
+                <div className="mb-1.5 flex items-center justify-between px-1.5">
+                  <h2 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--aisle-ink)]">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--aisle-dot)]"
+                      aria-hidden="true"
+                    />
+                    <span>{cat.label}</span>
+                  </h2>
+                  <span className="tabular rounded-md bg-[var(--aisle-pill-bg)] px-2 py-0.5 text-[13px] font-medium text-[var(--aisle-ink)]">
+                    {items.length}
+                  </span>
+                </div>
+                <ul role="list">
+                  {items.map((item) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      showCategoryLabel={false}
+                      onToggle={onToggleItem}
+                      onChangeCategory={onChangeItemCategory}
+                      onRemove={onRemoveItem}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )
       )}
 
       {/* Unchecked Items Ordered by Recently Added */}

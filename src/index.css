@@ -11,31 +11,37 @@
     color-scheme: light;
   }
 
-  /* Surface, border, typography, and semantic accent tokens */
-  --bg-page: light-dark(#ffffff, #111210);
-  --bg-surface: light-dark(#f5f6f3, #191b18);
-  --bg-subtle: light-dark(#ecefe9, #212420);
-  --bg-hover: light-dark(#e3e7df, #282c26);
-  --bg-raised: light-dark(#ffffff, #1e211d);
+  /* Botanical Market Ledger tokens */
+  --bg-page: light-dark(#f7f9f7, #0f1412);
+  --bg-rail: light-dark(#e8f0ec, #141d1a);
+  --border-rail: light-dark(#d2dfd9, #22302b);
 
-  --border-soft: light-dark(#e5e8e2, #282c26);
-  --border-rule: light-dark(#ecefe9, #20231e);
-  --border-strong: light-dark(#858b81, #6c7268);
+  --bg-surface: light-dark(#eff3f0, #171f1c);
+  --bg-subtle: light-dark(#e4ebe6, #1f2925);
+  --bg-hover: light-dark(#d8e3dc, #27342f);
+  --bg-raised: light-dark(#ffffff, #1b2420);
 
-  --text-main: light-dark(#1b1d1a, #f3f4f1);
-  --text-muted: light-dark(#565b53, #b4b8b0);
-  --text-faint: light-dark(#636860, #93988f);
+  --border-soft: light-dark(#dce4de, #26332e);
+  --border-rule: light-dark(#e3ebe5, #202b27);
+  --border-strong: light-dark(#7d8a82, #65756c);
 
-  /* Near-black primary action on light, crisp inverted light primary on dark (>= 16:1 contrast) */
-  --primary-bg: light-dark(#1b1d1a, #f3f4f1);
-  --primary-hover: light-dark(#2e322c, #dfe2dc);
-  --primary-ink: light-dark(#ffffff, #111210);
+  --text-main: light-dark(#16201c, #eef3f0);
+  --text-muted: light-dark(#4a5952, #aec0b7);
+  --text-faint: light-dark(#5b6b63, #8ea197);
 
-  /* Deep market herb accent (< 2% of pixels: checked checkboxes, basket progress, focus rings) */
-  --accent-bg: light-dark(#18645c, #4cc2b5);
-  --accent-hover: light-dark(#125049, #63cfc3);
-  --accent-soft: light-dark(#e1f0ed, #162e2b);
-  --accent-ink: light-dark(#0e443e, #8ce3d9);
+  /* Market-herb primary actions & active navigation (>= 7:1 contrast in both schemes) */
+  --primary-bg: light-dark(#176354, #37b89c);
+  --primary-hover: light-dark(#114f43, #4ec7ad);
+  --primary-ink: light-dark(#ffffff, #06211b);
+
+  --nav-active-bg: light-dark(#176354, #1f473d);
+  --nav-active-ink: light-dark(#ffffff, #e6faf4);
+  --nav-active-badge: light-dark(#104a3e, #15332b);
+
+  --accent-bg: light-dark(#176354, #3cc2a5);
+  --accent-hover: light-dark(#114f43, #55cfb4);
+  --accent-soft: light-dark(#d8ece6, #17332c);
+  --accent-ink: light-dark(#0e453a, #8de6d2);
 
   --danger-bg: light-dark(#b42318, #c42b1e);
   --danger-soft: light-dark(#fdecea, #2e1918);
@@ -82,9 +88,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Native modal dialog backdrop — flat scrim, zero glass blur */
 dialog::backdrop {
-  background-color: rgba(17, 18, 16, 0.45);
+  background-color: rgba(15, 20, 18, 0.48);
 }
 
 dialog[open] {
@@ -108,46 +113,109 @@ dialog[open] {
   }
 }
 
-/* Quiet 6px botanical aisle markers (keeps color on data markers, never loud row pills) */
+/* Culinary aisle surface & ink palettes (scoped custom properties per category) */
 .cat-produce {
-  background-color: light-dark(#2e7d47, #5ec27d);
+  --aisle-bg: light-dark(#eaf5ed, #132218);
+  --aisle-rule: light-dark(#d4eadb, #1d3325);
+  --aisle-pill-bg: light-dark(#d2ebd9, #1e3827);
+  --aisle-ink: light-dark(#15572c, #8be0a6);
+  --aisle-dot: light-dark(#248f48, #52cf7a);
 }
+
 .cat-bakery {
-  background-color: light-dark(#a36624, #dba05c);
+  --aisle-bg: light-dark(#f3f0ea, #211b15);
+  --aisle-rule: light-dark(#e5dfd4, #30271d);
+  --aisle-pill-bg: light-dark(#eadbc6, #382c1e);
+  --aisle-ink: light-dark(#7a440d, #f2c07d);
+  --aisle-dot: light-dark(#c77722, #eba146);
 }
+
 .cat-dairy {
-  background-color: light-dark(#2b6999, #6fb3e8);
+  --aisle-bg: light-dark(#e9f3fb, #131e29);
+  --aisle-rule: light-dark(#d3e6f6, #1c2d3d);
+  --aisle-pill-bg: light-dark(#d0e4f7, #1d3145);
+  --aisle-ink: light-dark(#164b78, #91c9f7);
+  --aisle-dot: light-dark(#2577ba, #62b4f5);
 }
+
 .cat-meat {
-  background-color: light-dark(#a83c3c, #e37d7d);
+  --aisle-bg: light-dark(#faecef, #261519);
+  --aisle-rule: light-dark(#f0d6dc, #361d23);
+  --aisle-pill-bg: light-dark(#f3d3da, #3d2027);
+  --aisle-ink: light-dark(#822034, #f59eae);
+  --aisle-dot: light-dark(#c73854, #ed748b);
 }
+
 .cat-pantry {
-  background-color: light-dark(#785c38, #c7aa82);
+  --aisle-bg: light-dark(#eef4e7, #1a2114);
+  --aisle-rule: light-dark(#dde9cf, #26301c);
+  --aisle-pill-bg: light-dark(#dce8cb, #2a361e);
+  --aisle-ink: light-dark(#3d5417, #bdd98c);
+  --aisle-dot: light-dark(#658a28, #9ec45a);
 }
+
 .cat-frozen {
-  background-color: light-dark(#1d7885, #66cad6);
+  --aisle-bg: light-dark(#e8f5f7, #122226);
+  --aisle-rule: light-dark(#d0eaee, #1a3136);
+  --aisle-pill-bg: light-dark(#cbe8ed, #1b363d);
+  --aisle-ink: light-dark(#125663, #85deeb);
+  --aisle-dot: light-dark(#19889c, #50c9db);
 }
+
 .cat-candy {
-  background-color: light-dark(#9c3b6e, #e082b4);
+  --aisle-bg: light-dark(#f8ecf3, #241520);
+  --aisle-rule: light-dark(#edd5e4, #361e2f);
+  --aisle-pill-bg: light-dark(#f0d2e4, #3d2135);
+  --aisle-ink: light-dark(#7a2257, #f29fd0);
+  --aisle-dot: light-dark(#bf3b8a, #e874b9);
 }
+
 .cat-drinks {
-  background-color: light-dark(#4c5d8a, #94a7db);
+  --aisle-bg: light-dark(#ecf0fa, #151b29);
+  --aisle-rule: light-dark(#d8e1f5, #1f283d);
+  --aisle-pill-bg: light-dark(#d4def5, #212c45);
+  --aisle-ink: light-dark(#243d7a, #9eb5f5);
+  --aisle-dot: light-dark(#3b60ba, #7898ed);
 }
+
 .cat-household {
-  background-color: light-dark(#3b6b6e, #7dbac0);
+  --aisle-bg: light-dark(#e8f4f2, #132220);
+  --aisle-rule: light-dark(#d1e9e5, #1b302d);
+  --aisle-pill-bg: light-dark(#cce8e3, #1c3632);
+  --aisle-ink: light-dark(#145750, #87dbd3);
+  --aisle-dot: light-dark(#1f857b, #56c7bc);
 }
+
 .cat-care {
-  background-color: light-dark(#7a4b7d, #c593c9);
+  --aisle-bg: light-dark(#f6edf5, #231621);
+  --aisle-rule: light-dark(#ead6e7, #331f30);
+  --aisle-pill-bg: light-dark(#ebd3e8, #3a2237);
+  --aisle-ink: light-dark(#6e2662, #e8a2dc);
+  --aisle-dot: light-dark(#a63e95, #d977c9);
 }
+
 .cat-pets {
-  background-color: light-dark(#8f5228, #db9a6e);
+  --aisle-bg: light-dark(#f2eee9, #211c16);
+  --aisle-rule: light-dark(#e4ddd3, #30281f);
+  --aisle-pill-bg: light-dark(#e6d9c8, #382d21);
+  --aisle-ink: light-dark(#6e4219, #e8b787);
+  --aisle-dot: light-dark(#ad6828, #de9652);
 }
+
 .cat-other {
-  background-color: light-dark(#646960, #a0a69c);
+  --aisle-bg: light-dark(#edf1ee, #181e1b);
+  --aisle-rule: light-dark(#dce3de, #242c28);
+  --aisle-pill-bg: light-dark(#dae2dd, #27302b);
+  --aisle-ink: light-dark(#36473e, #b8ccc1);
+  --aisle-dot: light-dark(#567062, #8ca899);
 }
 
 @media (forced-colors: active) {
   [data-progress-fill] {
     background-color: Highlight;
+  }
+  [aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
   }
 }

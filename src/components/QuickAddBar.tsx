@@ -70,13 +70,13 @@ export function QuickAddBar({
                   setPickerOpen(false);
                   inputRef.current?.focus();
                 }}
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                className={`${c.tone} inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] font-medium transition-colors ${
                   c.id === detectedCategory
-                    ? 'border-[var(--accent-bg)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
-                    : 'border-[var(--border-soft)] bg-[var(--bg-raised)] text-[var(--text-main)] hover:bg-[var(--bg-hover)]'
+                    ? 'border-[var(--aisle-dot)] bg-[var(--aisle-pill-bg)] text-[var(--aisle-ink)]'
+                    : 'border-[var(--aisle-rule)] bg-[var(--aisle-bg)] text-[var(--aisle-ink)] hover:bg-[var(--aisle-pill-bg)]'
                 }`}
               >
-                <span className={`h-2 w-2 shrink-0 rounded-full ${c.tone}`} aria-hidden="true" />
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--aisle-dot)]" aria-hidden="true" />
                 <span>{c.shortLabel}</span>
               </button>
             ))}
@@ -110,11 +110,11 @@ export function QuickAddBar({
               type="button"
               onClick={() => setPickerOpen((v) => !v)}
               title="Detected aisle (click to change)"
-              className="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--bg-surface)] px-2.5 text-[13px] font-medium text-[var(--text-main)] transition-colors hover:bg-[var(--bg-hover)]"
+              className={`${catMeta.tone} flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--aisle-pill-bg)] px-2.5 text-[13px] font-medium text-[var(--aisle-ink)] transition-opacity hover:opacity-90`}
             >
-              <span className={`h-2 w-2 shrink-0 rounded-full ${catMeta.tone}`} aria-hidden="true" />
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--aisle-dot)]" aria-hidden="true" />
               <span className="hidden sm:inline">{catMeta.shortLabel}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              <ChevronDown className="h-3.5 w-3.5 opacity-80" />
             </button>
           )}
 
@@ -122,7 +122,7 @@ export function QuickAddBar({
             type="submit"
             disabled={!text.trim()}
             aria-label="Add item"
-            className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary-bg)] px-3.5 text-[14px] font-medium text-[var(--primary-ink)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary-bg)] px-3.5 text-[14px] font-medium text-[var(--primary-ink)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:bg-[var(--accent-soft)] disabled:text-[var(--accent-ink)]"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add</span>

@@ -22,7 +22,7 @@ export function Header({
   onOpenShareModal,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border-soft)] bg-[var(--bg-page)] lg:hidden">
+    <header className="sticky top-0 z-20 border-b border-[var(--border-rail)] bg-[var(--bg-rail)] lg:hidden">
       <div className="flex h-13 items-center justify-between gap-2 px-5">
         <button
           type="button"

@@ -206,10 +206,10 @@ export function ChecklistModal({
                     return (
                       <span
                         key={`${p.name}-${idx}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-soft)] bg-[var(--bg-raised)] px-2.5 py-1 text-[13px] font-medium text-[var(--text-main)]"
+                        className={`${cat.tone} inline-flex items-center gap-1.5 rounded-lg border border-[var(--aisle-rule)] bg-[var(--aisle-bg)] px-2.5 py-1 text-[13px] font-medium text-[var(--aisle-ink)]`}
                       >
                         <span
-                          className={`h-2 w-2 shrink-0 rounded-full ${cat.tone}`}
+                          className="h-2 w-2 shrink-0 rounded-full bg-[var(--aisle-dot)]"
                           aria-hidden="true"
                         />
                         <span>

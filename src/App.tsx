@@ -83,7 +83,7 @@ export function App() {
       />
 
       {/* Desktop Sidebar (>= 1024px) */}
-      <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-r lg:border-[var(--border-soft)] lg:bg-[var(--bg-surface)]">
+      <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:border-r lg:border-[var(--border-rail)] lg:bg-[var(--bg-rail)]">
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <div className="flex items-center gap-2">
             <BasketMark />
