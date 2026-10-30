@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-ssr
+*.tsbuildinfo
+*.local
+.env
+.env.*
+!.env.example
+.firebase
+firebase-debug.log*
+firestore-debug.log*
+.DS_Store
+Thumbs.db

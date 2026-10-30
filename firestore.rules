@@ -1,0 +1,171 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — CozyCart Zero-Knowledge Firestore Rules
+// ===============================================================
+//
+// Security & Privacy Architecture:
+//   - Zero-Login Anonymous Auth: Every request requires Firebase Anonymous
+//     Authentication (`request.auth != null`). No emails, accounts, or UIDs
+//     are stored in documents by privacy design.
+//   - Capability-Based Document IDs: `docId` is a 64-character lowercase
+//     hexadecimal SHA-256 digest (`^[a-f0-9]{64}$`) derived client-side via
+//     PBKDF2 from a high-entropy Friend Code or encrypted household key.
+//   - Anti-Enumeration: Collection listing (`allow list: if false;`) is
+//     strictly prohibited on all collections so capability IDs cannot be
+//     discovered or scraped. Only single-document `get` is permitted.
+//   - Zero-Knowledge Ciphertext Envelope: Plaintext fields are strictly
+//     rejected. Documents may only store the 4-field AES-256-GCM envelope.
+//   - Optimistic Concurrency (CRDT Sync): `rev` must start at `1` on `create`
+//     and increment by exactly `+1` on every `update`, preventing blind
+//     overwrites and enforcing read-merge-write conflict resolution.
+//
+// Collection: households
+// Path: /households/{docId}
+// Document ID: 64-char lowercase hex SHA-256 capability (`^[a-f0-9]{64}$`)
+// Fields:
+//   - ct: string (required, 16..200000 chars) - Base64 AES-256-GCM ciphertext
+//   - iv: string (required, 12..32 chars) - Base64 96-bit initialization vector
+//   - rev: int (required, == 1 on create, == resource.data.rev + 1 on update)
+//   - updatedAt: timestamp (required, == request.time via serverTimestamp())
+//
+// Collection: lists
+// Path: /lists/{docId}
+// Document ID: 64-char lowercase hex SHA-256 capability (`^[a-f0-9]{64}$`)
+// Fields:
+//   - ct: string (required, 16..200000 chars) - Base64 AES-256-GCM ciphertext
+//   - iv: string (required, 12..32 chars) - Base64 96-bit initialization vector
+//   - rev: int (required, == 1 on create, == resource.data.rev + 1 on update)
+//   - updatedAt: timestamp (required, == request.time via serverTimestamp())
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Require Firebase Authentication (Anonymous Auth enabled)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Validate 256-bit capability Document ID (64 lowercase hex characters)
+    function isValidDocId(docId) {
+      return docId is string &&
+             docId.size() == 64 &&
+             docId.matches('^[a-f0-9]{64}$');
+    }
+
+    // Validate that all required fields exist on the incoming document
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that no extraneous or plaintext fields exist on the document
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate string type and exact character length bounds (DoS protection)
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    // Enforce server-generated commit timestamp (`serverTimestamp()`)
+    function isServerTimestamp(ts) {
+      return ts is timestamp && ts == request.time;
+    }
+
+    // ===============================================================
+    // Domain Validators (Called on BOTH create and update)
+    // ===============================================================
+
+    // Strict zero-knowledge AES-256-GCM ciphertext envelope validator
+    function isValidCiphertextEnvelope(data) {
+      return hasRequiredFields(['ct', 'iv', 'rev', 'updatedAt']) &&
+             hasOnlyAllowedFields(['ct', 'iv', 'rev', 'updatedAt']) &&
+             data.keys().size() == 4 &&
+             validStringLength('ct', 16, 200000) &&
+             validStringLength('iv', 12, 32) &&
+             data.rev is int &&
+             data.rev >= 1 &&
+             data.rev <= 9007199254740991 &&
+             isServerTimestamp(data.updatedAt);
+    }
+
+    // Revision must start at 1 when creating a new encrypted document
+    function isInitialRevision(data) {
+      return data.rev == 1;
+    }
+
+    // Revision must increment monotonically by +1 on update (CRDT concurrency)
+    function isNextRevision(newData, existingData) {
+      return existingData.rev is int &&
+             newData.rev == existingData.rev + 1;
+    }
+
+    // ===============================================================
+    // Collection Rules: /households/{docId}
+    // ===============================================================
+    match /households/{docId} {
+      // Single-document read / snapshot listener only for valid capability IDs
+      allow get: if isAuthenticated() && isValidDocId(docId);
+
+      // Block collection enumeration to prevent capability discovery
+      allow list: if false;
+
+      // Create new encrypted household envelope at revision 1
+      allow create: if isAuthenticated() &&
+                       isValidDocId(docId) &&
+                       isValidCiphertextEnvelope(request.resource.data) &&
+                       isInitialRevision(request.resource.data);
+
+      // Update encrypted household envelope with strict +1 revision check
+      allow update: if isAuthenticated() &&
+                       isValidDocId(docId) &&
+                       isValidCiphertextEnvelope(request.resource.data) &&
+                       isNextRevision(request.resource.data, resource.data);
+
+      // Allow capability holders to purge encrypted household from cloud
+      allow delete: if isAuthenticated() && isValidDocId(docId);
+    }
+
+    // ===============================================================
+    // Collection Rules: /lists/{docId}
+    // ===============================================================
+    match /lists/{docId} {
+      // Single-document read / snapshot listener only for valid capability IDs
+      allow get: if isAuthenticated() && isValidDocId(docId);
+
+      // Block collection enumeration to prevent capability discovery
+      allow list: if false;
+
+      // Create new encrypted shopping list envelope at revision 1
+      allow create: if isAuthenticated() &&
+                       isValidDocId(docId) &&
+                       isValidCiphertextEnvelope(request.resource.data) &&
+                       isInitialRevision(request.resource.data);
+
+      // Update encrypted shopping list envelope with strict +1 revision check
+      allow update: if isAuthenticated() &&
+                       isValidDocId(docId) &&
+                       isValidCiphertextEnvelope(request.resource.data) &&
+                       isNextRevision(request.resource.data, resource.data);
+
+      // Allow capability holders to purge encrypted list from cloud
+      allow delete: if isAuthenticated() && isValidDocId(docId);
+    }
+
+    // ===============================================================
+    // Default Deny Fallback (All Other Collections & Subcollections)
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

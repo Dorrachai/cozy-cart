@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Reflect <meta name="color-scheme"> override back into CSS cascade per modern-web-guidance `dark-mode-toggle` */
+:root {
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+
+  --bg-page: light-dark(#fffbf5, #17141d);
+  --bg-surface: light-dark(#ffffff, #221e2b);
+  --bg-subtle: light-dark(#f8f1e7, #2c2738);
+  --bg-hover: light-dark(#f2e8da, #352f44);
+  --border-soft: light-dark(#eadfce, #383147);
+  --border-strong: light-dark(#d8c7af, #4d4461);
+
+  --text-main: light-dark(#2e252c, #f7f2f9);
+  --text-muted: light-dark(#756670, #b6aab9);
+  --text-faint: light-dark(#9f8f99, #847889);
+
+  --accent-bg: light-dark(#e34c6c, #e65575);
+  --accent-hover: light-dark(#cf3b5b, #f06785);
+  --accent-soft: light-dark(#ffe6ec, #3d2430);
+  --accent-ink: light-dark(#9e2a43, #ffc4d1);
+
+  --mint-soft: light-dark(#e3f7ee, #1f3930);
+  --mint-ink: light-dark(#1f6e4c, #9ce6c4);
+
+  --shadow-card: light-dark(
+    0 4px 18px -4px rgba(88, 60, 48, 0.08),
+    0 6px 22px -4px rgba(0, 0, 0, 0.4)
+  );
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family:
+    ui-rounded,
+    "Hiragino Maru Gothic ProN",
+    "Quicksand",
+    "Nunito",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Native modal dialog backdrop styling */
+dialog::backdrop {
+  background-color: rgba(24, 18, 28, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+dialog[open] {
+  animation: cozy-pop 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cozy-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Cute pastel aisle pill tokens (high contrast in both light & dark modes) */
+.cat-produce {
+  background-color: light-dark(#e6f8ec, #1d3a29);
+  color: light-dark(#1c6b39, #9fe8b8);
+  border-color: light-dark(#bfead0, #2c573e);
+}
+.cat-bakery {
+  background-color: light-dark(#fff2dd, #3c2e1b);
+  color: light-dark(#8a520d, #f9cf8e);
+  border-color: light-dark(#f6d9ab, #5a4427);
+}
+.cat-dairy {
+  background-color: light-dark(#e7f3ff, #1d2f45);
+  color: light-dark(#1c588c, #a4d2ff);
+  border-color: light-dark(#c1dfff, #2d496b);
+}
+.cat-meat {
+  background-color: light-dark(#ffe8e8, #3f2226);
+  color: light-dark(#9a2c2c, #ffb4b8);
+  border-color: light-dark(#f9c5c5, #5d3238);
+}
+.cat-pantry {
+  background-color: light-dark(#f6efe4, #352d25);
+  color: light-dark(#6d4e27, #e4c9a5);
+  border-color: light-dark(#e5d5bc, #4f4337);
+}
+.cat-frozen {
+  background-color: light-dark(#e5f9fb, #1a373d);
+  color: light-dark(#156974, #99e8f2);
+  border-color: light-dark(#b9ecf2, #28535c);
+}
+.cat-candy {
+  background-color: light-dark(#ffe7f4, #3e2135);
+  color: light-dark(#9c2668, #ffb3de);
+  border-color: light-dark(#fbc3e2, #5e3250);
+}
+.cat-drinks {
+  background-color: light-dark(#efeaff, #2d2545);
+  color: light-dark(#56379c, #cbbaff);
+  border-color: light-dark(#d7caff, #453869);
+}
+.cat-household {
+  background-color: light-dark(#eaf4f4, #223537);
+  color: light-dark(#2c6266, #a9dfe3);
+  border-color: light-dark(#c7e1e2, #355255);
+}
+.cat-care {
+  background-color: light-dark(#fdf0ff, #392340);
+  color: light-dark(#7d308f, #ebb9f7);
+  border-color: light-dark(#f2ccf8, #563561);
+}
+.cat-pets {
+  background-color: light-dark(#fff0e4, #3d2a1e);
+  color: light-dark(#8f4818, #f9c29b);
+  border-color: light-dark(#f8d3b6, #5c3f2d);
+}
+.cat-other {
+  background-color: light-dark(#f3eef5, #2f2936);
+  color: light-dark(#5f4e69, #d4c6de);
+  border-color: light-dark(#dfd4e4, #473e52);
+}
