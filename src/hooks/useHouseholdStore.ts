@@ -9,10 +9,12 @@ import { parsePastedChecklist } from '../lib/checklist';
 import { mergeHouseholdIndexes, mergeLists } from '../lib/crdt';
 import {
   deriveRoomCredentials,
+  extractFriendCodeFromInput,
   generateFriendCode,
   normalizeFriendCode,
   parseInviteHash,
 } from '../lib/crypto';
+import { sanitizeHouseholdIndex, sanitizeShoppingList } from '../lib/sanitize';
 import {
   deleteEncryptedDoc,
   fetchEncryptedDoc,
@@ -110,15 +112,97 @@ function createInitialSession(): PersistedSession {
   };
 }
 
+function mergeSafeHousehold(local: HouseholdIndex, remoteRaw: unknown): HouseholdIndex {
+  const cleanRemote = sanitizeHouseholdIndex(remoteRaw);
+  return cleanRemote ? mergeHouseholdIndexes(local, cleanRemote) : local;
+}
+
+function makeSafeListMerger(pinnedCode: string) {
+  return (local: ShoppingList, remoteRaw: unknown): ShoppingList => {
+    const cleanRemote = sanitizeShoppingList(remoteRaw, pinnedCode);
+    return cleanRemote ? mergeLists(local, cleanRemote) : local;
+  };
+}
+
 function loadSession(): PersistedSession {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return createInitialSession();
-    const parsed = JSON.parse(raw) as PersistedSession;
+    const parsed = JSON.parse(raw) as Partial<PersistedSession>;
     if (!parsed?.householdCode || !parsed?.householdIndex || !parsed?.listsByCode) {
       return createInitialSession();
     }
-    return parsed;
+
+    const safeHouseholdCode = normalizeFriendCode(parsed.householdCode);
+    if (!safeHouseholdCode.startsWith('H-')) {
+      return createInitialSession();
+    }
+
+    const safeIndex = sanitizeHouseholdIndex(parsed.householdIndex);
+    if (!safeIndex) {
+      return createInitialSession();
+    }
+
+    const safeListsByCode: Record<string, ShoppingList> = {};
+    for (const [code, listVal] of Object.entries(parsed.listsByCode)) {
+      try {
+        const normCode = normalizeFriendCode(code);
+        if (!normCode.startsWith('L-')) continue;
+        const cleanList = sanitizeShoppingList(listVal, normCode);
+        if (cleanList) {
+          safeListsByCode[normCode] = cleanList;
+        }
+      } catch {
+        // Drop tampered local list entries
+      }
+    }
+
+    const safeGuestCodes: string[] = [];
+    if (Array.isArray(parsed.guestListCodes)) {
+      for (const g of parsed.guestListCodes) {
+        try {
+          const normG = normalizeFriendCode(String(g));
+          if (normG.startsWith('L-') && !safeGuestCodes.includes(normG)) {
+            safeGuestCodes.push(normG);
+          }
+        } catch {
+          // Drop invalid guest codes
+        }
+      }
+    }
+
+    // Ensure at least one valid list exists
+    if (Object.keys(safeIndex.lists).length === 0 && safeGuestCodes.length === 0) {
+      return createInitialSession();
+    }
+
+    let safeActiveCode = '';
+    if (typeof parsed.activeListCode === 'string') {
+      try {
+        const candidate = normalizeFriendCode(parsed.activeListCode);
+        if (candidate.startsWith('L-')) safeActiveCode = candidate;
+      } catch {
+        // Fallback below
+      }
+    }
+    if (!safeActiveCode) {
+      safeActiveCode =
+        Object.values(safeIndex.lists)[0]?.listCode ??
+        safeGuestCodes[0] ??
+        Object.keys(safeListsByCode)[0] ??
+        '';
+    }
+    if (!safeActiveCode) {
+      return createInitialSession();
+    }
+
+    return {
+      householdCode: safeHouseholdCode,
+      householdIndex: safeIndex,
+      listsByCode: safeListsByCode,
+      guestListCodes: safeGuestCodes,
+      activeListCode: safeActiveCode,
+    };
   } catch {
     return createInitialSession();
   }
@@ -185,11 +269,11 @@ export function useHouseholdStore() {
             'households',
             creds,
             nextIndex,
-            mergeHouseholdIndexes
+            mergeSafeHousehold
           );
           setSession((curr) =>
             curr.householdCode === code
-              ? { ...curr, householdIndex: mergeHouseholdIndexes(curr.householdIndex, merged) }
+              ? { ...curr, householdIndex: mergeSafeHousehold(curr.householdIndex, merged) }
               : curr
           );
           if (isCloudSyncConfigured()) setSyncMode('synced');
@@ -211,7 +295,8 @@ export function useHouseholdStore() {
       const timer = setTimeout(async () => {
         try {
           const creds = await getCreds(listCode);
-          const merged = await upsertEncryptedDoc('lists', creds, nextList, mergeLists);
+          const safeMerger = makeSafeListMerger(creds.normalized);
+          const merged = await upsertEncryptedDoc('lists', creds, nextList, safeMerger);
           setSession((curr) => {
             const existing = curr.listsByCode[listCode];
             if (!existing) return curr;
@@ -219,7 +304,7 @@ export function useHouseholdStore() {
               ...curr,
               listsByCode: {
                 ...curr.listsByCode,
-                [listCode]: mergeLists(existing, merged),
+                [listCode]: safeMerger(existing, merged),
               },
             };
           });
@@ -247,25 +332,27 @@ export function useHouseholdStore() {
           'households',
           creds,
           sessionRef.current.householdIndex,
-          mergeHouseholdIndexes
+          mergeSafeHousehold
         );
         if (!active) return;
         setSession((curr) =>
           curr.householdCode === hCode
-            ? { ...curr, householdIndex: mergeHouseholdIndexes(curr.householdIndex, merged) }
+            ? { ...curr, householdIndex: mergeSafeHousehold(curr.householdIndex, merged) }
             : curr
         );
         if (isCloudSyncConfigured()) setSyncMode('synced');
 
-        unsub = subscribeEncryptedDoc<HouseholdIndex>(
+        unsub = subscribeEncryptedDoc<unknown>(
           'households',
           creds,
-          (remoteIndex) => {
+          (remoteIndexRaw) => {
+            const cleanRemote = sanitizeHouseholdIndex(remoteIndexRaw);
+            if (!cleanRemote) return;
             setSession((curr) => {
               if (curr.householdCode !== hCode) return curr;
               return {
                 ...curr,
-                householdIndex: mergeHouseholdIndexes(curr.householdIndex, remoteIndex),
+                householdIndex: mergeHouseholdIndexes(curr.householdIndex, cleanRemote),
               };
             });
             if (isCloudSyncConfigured()) setSyncMode('synced');
@@ -306,34 +393,40 @@ export function useHouseholdStore() {
       getCreds(listCode)
         .then(async (creds) => {
           if (!active) return;
+          const safeMerger = makeSafeListMerger(creds.normalized);
           const localList = sessionRef.current.listsByCode[listCode];
           if (localList) {
-            const merged = await upsertEncryptedDoc('lists', creds, localList, mergeLists);
+            const merged = await upsertEncryptedDoc('lists', creds, localList, safeMerger);
             if (!active) return;
             setSession((curr) => ({
               ...curr,
               listsByCode: {
                 ...curr.listsByCode,
                 [listCode]: curr.listsByCode[listCode]
-                  ? mergeLists(curr.listsByCode[listCode]!, merged)
+                  ? safeMerger(curr.listsByCode[listCode]!, merged)
                   : merged,
               },
             }));
           } else {
-            const remote = await fetchEncryptedDoc<ShoppingList>('lists', creds);
-            if (active && remote) {
+            const remoteRaw = await fetchEncryptedDoc<unknown>('lists', creds);
+            const cleanRemote = remoteRaw
+              ? sanitizeShoppingList(remoteRaw, creds.normalized)
+              : null;
+            if (active && cleanRemote) {
               setSession((curr) => ({
                 ...curr,
-                listsByCode: { ...curr.listsByCode, [listCode]: remote },
+                listsByCode: { ...curr.listsByCode, [listCode]: cleanRemote },
               }));
             }
           }
 
           if (!active) return;
-          const unsub = subscribeEncryptedDoc<ShoppingList>('lists', creds, (remoteList) => {
+          const unsub = subscribeEncryptedDoc<unknown>('lists', creds, (remoteListRaw) => {
+            const cleanRemote = sanitizeShoppingList(remoteListRaw, creds.normalized);
+            if (!cleanRemote) return;
             setSession((curr) => {
               const currList = curr.listsByCode[listCode];
-              const nextList = currList ? mergeLists(currList, remoteList) : remoteList;
+              const nextList = currList ? mergeLists(currList, cleanRemote) : cleanRemote;
               return {
                 ...curr,
                 listsByCode: { ...curr.listsByCode, [listCode]: nextList },
@@ -358,7 +451,9 @@ export function useHouseholdStore() {
     async (rawCode: string): Promise<{ ok: boolean; message: string }> => {
       let creds: RoomCredentials;
       try {
-        creds = await getCreds(rawCode);
+        const allowedOrigin = typeof window !== 'undefined' ? window.location.origin : undefined;
+        const extracted = extractFriendCodeFromInput(rawCode, allowedOrigin);
+        creds = await getCreds(extracted);
       } catch (err) {
         return {
           ok: false,
@@ -368,7 +463,10 @@ export function useHouseholdStore() {
 
       if (creds.kind === 'household') {
         try {
-          const remoteHousehold = await fetchEncryptedDoc<HouseholdIndex>('households', creds);
+          const remoteHouseholdRaw = await fetchEncryptedDoc<unknown>('households', creds);
+          const remoteHousehold = remoteHouseholdRaw
+            ? sanitizeHouseholdIndex(remoteHouseholdRaw)
+            : null;
           if (!remoteHousehold) {
             return {
               ok: false,
@@ -387,10 +485,11 @@ export function useHouseholdStore() {
           await Promise.all(
             activeRefs.map(async (ref) => {
               const lCreds = await getCreds(ref.listCode);
-              const lDoc = await fetchEncryptedDoc<ShoppingList>('lists', lCreds);
-              fetchedLists[ref.listCode] = lDoc ?? {
+              const lDocRaw = await fetchEncryptedDoc<unknown>('lists', lCreds);
+              const cleanDoc = lDocRaw ? sanitizeShoppingList(lDocRaw, lCreds.normalized) : null;
+              fetchedLists[lCreds.normalized] = cleanDoc ?? {
                 id: ref.id,
-                listCode: ref.listCode,
+                listCode: lCreds.normalized,
                 title: ref.title,
                 emoji: ref.emoji,
                 createdAt: ref.createdAt,
@@ -417,7 +516,10 @@ export function useHouseholdStore() {
 
       // Single-list guest code (`L-...`)
       try {
-        const remoteList = await fetchEncryptedDoc<ShoppingList>('lists', creds);
+        const remoteListRaw = await fetchEncryptedDoc<unknown>('lists', creds);
+        const remoteList = remoteListRaw
+          ? sanitizeShoppingList(remoteListRaw, creds.normalized)
+          : null;
         if (!remoteList) {
           return {
             ok: false,

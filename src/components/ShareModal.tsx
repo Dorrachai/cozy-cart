@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import {
   Check,
   Copy,
@@ -11,7 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { buildInviteUrl } from '../lib/crypto';
+import { buildInviteUrl, normalizeFriendCode } from '../lib/crypto';
 import { ModalDialog } from './ModalDialog';
 import type { ShoppingList } from '../types/shopping';
 
@@ -43,8 +43,12 @@ export function ShareModal({
   const [joinError, setJoinError] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const activeCode = tab === 'list' ? activeList.listCode : householdCode;
-  const inviteUrl = buildInviteUrl(activeCode);
+  const { activeCode, inviteUrl } = useMemo(() => {
+    const candidate = tab === 'list' ? activeList.listCode : householdCode;
+    const safeCode = normalizeFriendCode(candidate);
+    const url = buildInviteUrl(safeCode);
+    return { activeCode: safeCode, inviteUrl: url };
+  }, [tab, activeList.listCode, householdCode]);
 
   const copyText = async (val: string, kind: 'code' | 'link') => {
     try {

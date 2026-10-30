@@ -4,10 +4,13 @@ import {
   decryptPayload,
   deriveRoomCredentials,
   encryptPayload,
+  extractFriendCodeFromInput,
   generateFriendCode,
+  isValidFriendCode,
   normalizeFriendCode,
   parseInviteHash,
 } from '../crypto';
+import { sanitizeHouseholdIndex, sanitizeShoppingList } from '../sanitize';
 
 describe('crypto & zero-knowledge Friend Codes', () => {
   it('generates distinct high-entropy H- and L- Friend Codes', () => {
@@ -62,5 +65,116 @@ describe('crypto & zero-knowledge Friend Codes', () => {
     expect(url).toBe('https://user.github.io/cozy-cart/#join=L-mango-mint-9K4P2X7');
     expect(parseInviteHash('#join=L-mango-mint-9K4P2X7')).toBe('L-mango-mint-9K4P2X7');
     expect(parseInviteHash('')).toBeNull();
+  });
+
+  it('blocks malicious URLs, javascript:/data: schemes, and XSS payloads in Friend Codes & QR URLs', () => {
+    const maliciousInputs = [
+      'https://evil.example/phish',
+      'https://evil.example/foo-bar-BAZ1234',
+      'http://192.168.1.1/admin',
+      'javascript:alert(1)',
+      'javascript:alert(document.cookie)//H-berry-mochi-7K4P9X2',
+      'data:text/html,<script>alert(1)</script>',
+      '<script>alert(1)</script>',
+      'H-berry-mochi-7K4P9X2?redirect=https://evil.example',
+      'H-berry-mochi-7K4P9X2@evil.example',
+    ];
+
+    for (const bad of maliciousInputs) {
+      expect(isValidFriendCode(bad)).toBe(false);
+      expect(() => normalizeFriendCode(bad)).toThrow();
+      expect(() => buildInviteUrl(bad, 'https://dorrachai.github.io/cozy-cart/')).toThrow();
+      expect(parseInviteHash(`#join=${encodeURIComponent(bad)}`)).toBeNull();
+    }
+
+    // Also block non-HTTP(S) base origins in buildInviteUrl
+    expect(() => buildInviteUrl('H-berry-mochi-7K4P9X2', 'javascript:alert(1)')).toThrow();
+    expect(() => buildInviteUrl('H-berry-mochi-7K4P9X2', 'data:text/html,hi')).toThrow();
+
+    // Join input helper accepts same-origin invite links, blocks external phishing domains
+    expect(
+      extractFriendCodeFromInput(
+        'https://dorrachai.github.io/cozy-cart/#join=H-berry-mochi-7K4P9X2',
+        'https://dorrachai.github.io'
+      )
+    ).toBe('H-berry-mochi-7K4P9X2');
+
+    expect(() =>
+      extractFriendCodeFromInput(
+        'https://evil-phish.example/cozy-cart/#join=H-berry-mochi-7K4P9X2',
+        'https://dorrachai.github.io'
+      )
+    ).toThrow(/External links are blocked/);
+
+    expect(() =>
+      extractFriendCodeFromInput('javascript:alert(1)', 'https://dorrachai.github.io')
+    ).toThrow();
+  });
+
+  it('pins listCode and sanitizes untrusted decrypted payloads against QR spoofing & CRDT poisoning', () => {
+    const now = 1_760_000_000_000;
+    const pinnedCode = 'L-berry-mochi-7K4P9X2';
+
+    // Simulate a malicious peer trying to overwrite listCode with a phishing URL and Year-9999 timestamp
+    const tamperedRemoteList = {
+      id: 'list123',
+      listCode: 'https://evil.example/malicious-qr',
+      title: 'Groceries\u0000\u0007',
+      emoji: '🛒',
+      createdAt: now - 1000,
+      updatedAt: 99_999_999_999_999,
+      items: {
+        item1: {
+          id: 'item1',
+          name: 'Oat milk',
+          qty: '2x',
+          category: 'invalid-category',
+          checked: false,
+          updatedAt: 99_999_999_999_999,
+        },
+      },
+    };
+
+    const cleanList = sanitizeShoppingList(tamperedRemoteList, pinnedCode, now);
+    expect(cleanList).not.toBeNull();
+    // Must stay pinned to the cryptographic capability code, never the attacker's string
+    expect(cleanList!.listCode).toBe(pinnedCode);
+    expect(cleanList!.title).toBe('Groceries');
+    expect(cleanList!.updatedAt).toBeLessThanOrEqual(now + 5 * 60 * 1000);
+    expect(cleanList!.items['item1']?.category).toBe('other');
+
+    // Simulate a tampered HouseholdIndex referencing a malicious URL as listCode
+    const tamperedHousehold = {
+      version: 1,
+      householdName: 'Home',
+      updatedAt: now,
+      lists: {
+        good: {
+          id: 'good',
+          listCode: 'L-lemon-toast-3M8Q2W9',
+          title: 'October',
+          emoji: '🎃',
+          createdAt: now,
+          updatedAt: now,
+        },
+        bad: {
+          id: 'bad',
+          listCode: 'https://evil.example/steal',
+          title: 'Click Me',
+          emoji: '💀',
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      learnedCategories: {
+        'oat milk': 'dairy',
+        evil: 'not-a-category',
+      },
+    };
+
+    const cleanHousehold = sanitizeHouseholdIndex(tamperedHousehold, now);
+    expect(cleanHousehold).not.toBeNull();
+    expect(Object.keys(cleanHousehold!.lists)).toEqual(['good']);
+    expect(cleanHousehold!.learnedCategories).toEqual({ 'oat milk': 'dairy' });
   });
 });

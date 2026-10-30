@@ -23,6 +23,16 @@ const SAFE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const PBKDF2_ITERATIONS = 210_000;
 const PBKDF2_SALT = 'cozycart-e2ee-v1';
 
+/**
+ * Strict Friend Code allowlist:
+ * - Prefix `H` (Household) or `L` (Single List)
+ * - 1 to 4 lowercase alphanumeric word segments (2..20 chars each)
+ * - 1 uppercase alphanumeric token segment (4..16 chars)
+ * Contains ONLY `[A-Za-z0-9-]` — mathematically impossible to contain URLs, schemes, dots, slashes, or HTML/JS.
+ */
+export const FRIEND_CODE_PATTERN = /^[HL](?:-[a-z0-9]{2,20}){1,4}-[A-Z0-9]{4,16}$/;
+export const MAX_FRIEND_CODE_LENGTH = 64;
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -66,14 +76,30 @@ export function generateFriendCode(kind: 'household' | 'list'): string {
 
 /**
  * Normalizes user-typed or pasted Friend Codes so minor casing/whitespace differences
- * produce the exact same cryptographic key.
+ * produce the exact same cryptographic key, while strictly blocking URLs and special characters.
  */
 export function normalizeFriendCode(raw: string): string {
+  if (typeof raw !== 'string' || raw.length > 256) {
+    throw new Error('Invalid friend code length.');
+  }
+
   const cleaned = raw
     .trim()
     .replace(/^#?join=/i, '')
+    .trim()
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-');
+
+  if (!cleaned) {
+    throw new Error('Friend code cannot be empty.');
+  }
+
+  // Strict ASCII alphanumeric + hyphen allowlist: blocks `://`, `/`, `.`, `?`, `<`, `>`, quotes, etc.
+  if (!/^[A-Za-z0-9-]+$/.test(cleaned)) {
+    throw new Error(
+      'Invalid friend code: URLs and special characters are blocked for your security.'
+    );
+  }
 
   const parts = cleaned.split('-').filter(Boolean);
   if (parts.length < 2) {
@@ -84,8 +110,8 @@ export function normalizeFriendCode(raw: string): string {
   const prefix = firstUpper === 'H' || firstUpper === 'L' ? firstUpper : 'H';
   const rest = firstUpper === 'H' || firstUpper === 'L' ? parts.slice(1) : parts;
 
-  if (rest.length < 2) {
-    throw new Error('Friend code is too short.');
+  if (rest.length < 2 || rest.length > 5) {
+    throw new Error('Friend code format is invalid. Expected format like H-berry-mochi-7K4P9X2.');
   }
 
   const normalizedRest = rest.map((segment, idx) =>
@@ -93,10 +119,71 @@ export function normalizeFriendCode(raw: string): string {
   );
 
   const joined = `${prefix}-${normalizedRest.join('-')}`;
-  if (joined.length < 12) {
-    throw new Error('Friend code must be at least 12 characters long.');
+  if (
+    joined.length < 12 ||
+    joined.length > MAX_FRIEND_CODE_LENGTH ||
+    !FRIEND_CODE_PATTERN.test(joined)
+  ) {
+    throw new Error('Invalid friend code format. Expected format like H-berry-mochi-7K4P9X2.');
   }
   return joined;
+}
+
+/**
+ * Checks whether an untrusted value is a valid Friend Code without throwing.
+ */
+export function isValidFriendCode(raw: unknown): raw is string {
+  if (typeof raw !== 'string') return false;
+  try {
+    normalizeFriendCode(raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely parses user input from the "Join Code" form.
+ * - Accepts valid Friend Codes (`H-berry-mochi-7K4P9X2`).
+ * - Accepts same-origin CozyCart `#join=` invite links if the user pasted the whole link.
+ * - Blocks all external domains, `javascript:`/`data:` URIs, and malformed links.
+ */
+export function extractFriendCodeFromInput(rawInput: string, allowedOrigin?: string): string {
+  if (typeof rawInput !== 'string' || rawInput.length > 512) {
+    throw new Error('Input is too long.');
+  }
+  const trimmed = rawInput.trim();
+  if (!trimmed) {
+    throw new Error('Please enter a Friend Code.');
+  }
+
+  // Detect any URI scheme (`https://...`, `javascript:...`, `data:...`, etc.)
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new Error('Invalid link blocked. Please enter a CozyCart Friend Code.');
+    }
+
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error('Unsafe link scheme blocked. Please enter a CozyCart Friend Code.');
+    }
+
+    if (allowedOrigin && parsed.origin !== allowedOrigin) {
+      throw new Error(
+        'External links are blocked for your security. Enter a CozyCart Friend Code instead.'
+      );
+    }
+
+    const fromHash = parseInviteHash(parsed.hash);
+    if (!fromHash) {
+      throw new Error('That link does not contain a valid CozyCart #join Friend Code.');
+    }
+    return fromHash;
+  }
+
+  return normalizeFriendCode(trimmed);
 }
 
 /**
@@ -172,28 +259,45 @@ export async function decryptPayload<T>(ct: string, iv: string, aesKey: CryptoKe
 }
 
 /**
- * Builds a zero-leak invite link putting the Friend Code in the `#hash` fragment.
- * URL `#hash` fragments are NEVER sent over HTTP to GitHub Pages or third-party servers.
+ * Builds a zero-leak invite link putting the validated Friend Code in the `#hash` fragment.
+ * - Origin and path are strictly pinned to the app's own HTTP(S) URL (never user-supplied domains).
+ * - Friend Code is validated against `FRIEND_CODE_PATTERN` (`[A-Za-z0-9-]` only).
+ * - URL `#hash` fragments are NEVER sent over HTTP to GitHub Pages or third-party servers.
  */
 export function buildInviteUrl(friendCode: string, currentHref?: string): string {
-  const baseHref = currentHref ?? (typeof window !== 'undefined' ? window.location.href : 'https://example.github.io/');
+  const safeCode = normalizeFriendCode(friendCode);
+  const baseHref =
+    currentHref ?? (typeof window !== 'undefined' ? window.location.href : 'https://example.github.io/');
   const url = new URL(baseHref);
+
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('Invite URLs require an http or https origin.');
+  }
+
+  url.username = '';
+  url.password = '';
   url.search = '';
-  url.hash = `join=${encodeURIComponent(normalizeFriendCode(friendCode))}`;
-  return url.toString();
+  url.hash = `join=${safeCode}`;
+
+  const result = url.toString();
+  if (!result.startsWith(`${url.origin}${url.pathname}#join=${safeCode}`)) {
+    throw new Error('Invite URL origin verification failed.');
+  }
+  return result;
 }
 
 /**
- * Extracts `#join=<code`> from a URL hash if present, returning the normalized Friend Code.
+ * Extracts `#join=<code>` from a URL hash if present, returning the normalized Friend Code.
+ * Rejects any non-conforming or malicious hash payloads by returning `null`.
  */
 export function parseInviteHash(hash: string): string | null {
-  if (!hash) return null;
+  if (!hash || hash.length > 256) return null;
   const trimmed = hash.startsWith('#') ? hash.slice(1) : hash;
   const params = new URLSearchParams(trimmed);
   const raw = params.get('join');
   if (!raw) return null;
   try {
-    return normalizeFriendCode(decodeURIComponent(raw));
+    return normalizeFriendCode(raw);
   } catch {
     return null;
   }
